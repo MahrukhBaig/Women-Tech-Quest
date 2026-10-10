@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>WTQ Utility Bill Decoder | AI Assistant</title>
+  <meta name="description" content="AI-powered assistant for extracting and explaining Pakistani electricity bills (K-Electric, LESCO, IESCO).">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="logo-group">
+        <div class="logo-icon">⚡</div>
+        <div>
+          <h1 class="logo-title">Utility Bill Decoder</h1>
+          <p class="logo-subtitle">WTQ Build Track • Competition Entry</p>
+        </div>
+      </div>
+      <div class="status-badge" id="system-status-badge">
+        <span class="status-dot"></span>
+        <span id="model-name-label">gemini-3.5-flash-lite</span>
+      </div>
+    </header>
+
+    <!-- Main Grid -->
+    <main class="main-grid">
+      <!-- Left Column: Upload & Image Preview -->
+      <section class="panel upload-panel">
+        <div class="panel-header">
+          <h2>1. Upload Utility Bill</h2>
+          <span class="pill">PNG / JPG • Max 15MB</span>
+        </div>
+
+        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload utility bill image">
+          <input type="file" id="file-input" accept="image/png, image/jpeg" style="display: none;">
+          <div class="dropzone-content" id="dropzone-prompt">
+            <div class="upload-icon">📄</div>
+            <p class="dropzone-main-text">Drag & drop your electricity bill here</p>
+            <p class="dropzone-sub-text">or click to browse files from your computer</p>
+            <span class="upload-btn">Select Bill Image</span>
+          </div>
+          <div class="preview-container" id="preview-container" style="display: none;">
+            <img id="bill-preview-img" src="" alt="Bill preview">
+            <button class="btn-change-image" id="btn-change-image" title="Change Image">✕ Replace Image</button>
+          </div>
+        </div>
+
+        <!-- Sample Bill Quick Loader -->
+        <div class="sample-bills-bar">
+          <span class="sample-label">Try sample bills:</span>
+          <div class="sample-chips">
+            <button class="chip" data-sample="KESC_0008.png">KESC_0008 (Golden)</button>
+            <button class="chip" data-sample="IESCO_0004.jpg">IESCO_0004</button>
+            <button class="chip" data-sample="KESC_0004.png">KESC_0004 (Net-Meter)</button>
+            <button class="chip" data-sample="LESCO_0005.png">LESCO_0005</button>
+            <button class="chip" data-sample="LESCO_0006.png">LESCO_0006</button>
+          </div>
+        </div>
+
+        <!-- Decode Action Button -->
+        <button class="btn-primary" id="btn-decode" disabled>
+          <span id="btn-decode-text">⚡ Decode Utility Bill</span>
+          <span class="spinner" id="decode-spinner" style="display: none;"></span>
+        </button>
+
+        <div class="status-msg" id="status-msg" style="display: none;"></div>
+      </section>
+
+      <!-- Right Column: Results & Q&A -->
+      <section class="panel results-panel">
+        <div class="panel-header">
+          <h2>2. Bill Intelligence & Answers</h2>
+          <div class="tabs">
+            <button class="tab-btn active" id="tab-overview" data-target="view-overview">Overview</button>
+            <button class="tab-btn" id="tab-qa" data-target="view-qa">Customer Q&A</button>
+            <button class="tab-btn" id="tab-raw" data-target="view-raw">Raw JSON</button>
+          </div>
+        </div>
+
+        <!-- Empty Placeholder -->
+        <div class="empty-state" id="empty-state">
+          <div class="empty-icon">📊</div>
+          <h3>No bill decoded yet</h3>
+          <p>Upload a bill image on the left or select a training sample to view extracted Level 1 details and Level 2 customer explanations.</p>
+        </div>
+
+        <!-- Content Views -->
+        <div class="results-content" id="results-content" style="display: none;">
+          <!-- View 1: Overview Cards & Tables -->
+          <div class="tab-view active" id="view-overview">
+            <div class="metrics-grid">
+              <div class="metric-card highlight">
+                <span class="metric-label">Provider</span>
+                <span class="metric-val" id="val-provider">-</span>
+                <span class="metric-sub" id="val-tariff">-</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Billing Month</span>
+                <span class="metric-val" id="val-month">-</span>
+                <span class="metric-sub" id="val-issue-date">Issue: -</span>
+              </div>
+              <div class="metric-card">
+                <span class="metric-label">Units Consumed</span>
+                <span class="metric-val" id="val-units">-</span>
+                <span class="metric-sub" id="val-readings">Readings: -</span>
+              </div>
+              <div class="metric-card highlight-green">
+                <span class="metric-label">Payable Amount</span>
+                <span class="metric-val" id="val-payable">-</span>
+                <span class="metric-sub" id="val-due-date">Due: -</span>
+              </div>
+            </div>
+
+            <!-- Tax Share Banner -->
+            <div class="stats-banner" id="stats-banner">
+              <div class="stats-banner-icon">💡</div>
+              <div class="stats-banner-text">
+                <strong id="stat-tax-headline">Tax Share: -</strong>
+                <p id="stat-tax-detail">Deterministic precomputation verified by Python calculator.</p>
+              </div>
+            </div>
+
+            <!-- Breakdown Tables -->
+            <div class="tables-split">
+              <div class="table-card">
+                <div class="table-card-header">
+                  <h3>Itemized Charges</h3>
+                  <span class="badge" id="badge-total-charges">Total: PKR 0</span>
+                </div>
+                <div class="table-scroll">
+                  <table class="data-table" id="table-charges">
+                    <thead>
+                      <tr><th>Type</th><th class="text-right">Amount (PKR)</th></tr>
+                    </thead>
+                    <tbody id="tbody-charges"><tr><td colspan="2" class="text-muted">No charge rows</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+
+              <div class="table-card">
+                <div class="table-card-header">
+                  <h3>Taxes & Duties</h3>
+                  <span class="badge" id="badge-total-taxes">Total: PKR 0</span>
+                </div>
+                <div class="table-scroll">
+                  <table class="data-table" id="table-taxes">
+                    <thead>
+                      <tr><th>Type</th><th class="text-right">Amount (PKR)</th></tr>
+                    </thead>
+                    <tbody id="tbody-taxes"><tr><td colspan="2" class="text-muted">No tax rows</td></tr></tbody>
+                  </table>
+                </div>
+              </div>
+            </div>
+
+            <!-- Reconciliation & Notes -->
+            <div class="notes-card" id="notes-card" style="display: none;">
+              <h4>Reconciliation Notices</h4>
+              <ul id="warnings-list"></ul>
+            </div>
+          </div>
+
+          <!-- View 2: Customer Q&A -->
+          <div class="tab-view" id="view-qa">
+            <div class="qa-container" id="qa-container">
+              <!-- Dynamically populated Q&A items -->
+            </div>
+          </div>
+
+          <!-- View 3: Raw JSON -->
+          <div class="tab-view" id="view-raw">
+            <div class="json-actions">
+              <span>Compact single-line JSON compliant with Level 1 schema</span>
+              <button class="btn-copy" id="btn-copy-json">📋 Copy JSON</button>
+            </div>
+            <pre class="json-pre"><code id="raw-json-code"></code></pre>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+      <p>Built for Women Tech Quest (WTQ) Build Track • Utility Bill Decoder • Model: <strong>gemini-3.5-flash-lite</strong></p>
+    </footer>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

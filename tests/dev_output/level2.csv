@@ -1,0 +1,61 @@
+bill_id,question_id,question,answer
+IESCO_0004,Q1,How much of my bill is taxes?,"Taxes make up 15.24% of your current bill, which is PKR 498 out of a total current bill of PKR 3267 (computed from the bill charges summary)."
+IESCO_0004,Q2,How many months in my history went above 200 units?,"Based on the 12 months of recorded history provided in the bill, there are 0 months where consumption went above 200 units."
+IESCO_0004,Q3,How many units did I consume this month compared to my historical average?,"You consumed 158 units this month, which is 39.58 units higher than your historical average of 118.42 units (computed as 33.42% above average based on 12 months of recorded history)."
+IESCO_0004,Q4,What is the single largest charge on my bill?,The single largest charge listed in the bill's charges breakdown is fpa with an amount of PKR 267.
+IESCO_0004,Q5,When is the due date for this bill and how much should I pay?,"The due date for this bill is 2026-10-08, and you should pay PKR 3535 within the due date."
+IESCO_0004,Q6,How much will I have to pay if I pay after the due date?,"If you pay after the due date, you will have to pay PKR 3812, which includes an additional late payment amount of PKR 277."
+IESCO_0004,Q7,What is the Fuel Price Adjustment (FPA) charge on this bill?,The Fuel Price Adjustment (FPA) charge on this bill is PKR 267.
+IESCO_0004,Q8,Do I have any previous dues or arrears carry-forward on this bill?,There are no previous dues or arrears carry-forward on this bill; the arrears amount is PKR 0.
+IESCO_0004,Q9,What was my highest monthly consumption recorded in the history table?,Your highest monthly consumption recorded in the history table was 197 units in Jun 26.
+IESCO_0004,Q10,What is my sanctioned load and tariff category?,Your sanctioned load is 3 kW and your tariff category is A-1A(01) (Domestic).
+IESCO_0004,Q11,What are the meter reading dates and readings for this billing cycle?,The reading date for this billing cycle is 2026-09-25. The previous reading was 9301 and the current reading is 9459.
+IESCO_0004,Q12,Can you provide a breakdown of all the taxes and duties charged?,A detailed line-by-line breakdown of individual taxes and duties is not listed on the bill; the total taxes amount to PKR 498.
+KESC_0004,Q1,How much of my bill is taxes?,"Taxes make up 16.4% of your current bill, which is PKR 7472.24 out of PKR 45570.25 (computed from the bill data)."
+KESC_0004,Q2,How many months in my history went above 200 units?,"0 months in your recorded history went above 200 units, based on 0 months of recorded history."
+KESC_0004,Q3,How many units did I consume this month compared to my historical average?,You consumed 901 units this month. Your historical average cannot be determined as there are no historical billing records to compute an average.
+KESC_0004,Q4,What is the single largest charge on my bill?,The single largest charge on your bill is an energy charge amounting to PKR 26257.99.
+KESC_0004,Q5,When is the due date for this bill and how much should I pay?,"The due date for this bill is 13th Jul 2026, and the amount payable within the due date is PKR 0.0."
+KESC_0004,Q6,How much will I have to pay if I pay after the due date?,"If you pay after the due date, the amount payable is PKR 0.0 (computed late payment difference is PKR 0.0)."
+KESC_0004,Q7,What is the Fuel Price Adjustment (FPA) charge on this bill?,The Fuel Price Adjustment (FPA) charge on this bill is PKR 354.19.
+KESC_0004,Q8,Do I have any previous dues or arrears carry-forward on this bill?,"Yes, you have a credit carried forward of PKR -91877.02 in previous dues or arrears."
+KESC_0004,Q9,What was my highest monthly consumption recorded in the history table?,No history recorded.
+KESC_0004,Q10,What is my sanctioned load and tariff category?,Your sanctioned load is 10 kW and your tariff category is A1-R.
+KESC_0004,Q11,What are the meter reading dates and readings for this billing cycle?,The reading date is 2026-06-25. The previous reading was 1565.64 and the current reading was 2466.58.
+KESC_0004,Q12,Can you provide a breakdown of all the taxes and duties charged?,The taxes and duties charged consist of electricity_duty (PKR 520.85) and gst (PKR 6951.39).
+KESC_0008,Q1,How much of my bill is taxes?,"Taxes make up 16.61% of your current bill, which is PKR 569.62 out of PKR 3430.24 (computed based on the provided tax lines)."
+KESC_0008,Q2,How many months in my history went above 200 units?,There are 0 months in your history that went above 200 units (computed based on the billing history records).
+KESC_0008,Q3,How many units did I consume this month compared to my historical average?,You consumed 151 units this month. Your consumption compared to your historical average could not be determined from the bill because there are no historical billing records to compute an average.
+KESC_0008,Q4,What is the single largest charge on my bill?,The single largest charge on your bill is the energy charge of PKR 1054.0.
+KESC_0008,Q5,When is the due date for this bill and how much should I pay?,"The due date for this bill is 21st Apr 2026, and you should pay PKR 3430 within the due date."
+KESC_0008,Q6,How much will I have to pay if I pay after the due date?,"If you pay after the due date, you will have to pay PKR 3716."
+KESC_0008,Q7,What is the Fuel Price Adjustment (FPA) charge on this bill?,The Fuel Price Adjustment (FPA) charge on this bill is PKR 125.27.
+KESC_0008,Q8,Do I have any previous dues or arrears carry-forward on this bill?,"Yes, you have a credit carry-forward of PKR -0.53 on this bill."
+KESC_0008,Q9,What was my highest monthly consumption recorded in the history table?,This could not be determined from the bill as the historical units are not listed in the billing and payment history table.
+KESC_0008,Q10,What is my sanctioned load and tariff category?,Your sanctioned load is 3 kW and your tariff category is A1-R.
+KESC_0008,Q11,What are the meter reading dates and readings for this billing cycle?,"The reading date is 03-Apr-26, with a previous reading of 8819 and a current reading of 8970."
+KESC_0008,Q12,Can you provide a breakdown of all the taxes and duties charged?,"The breakdown of taxes and duties charged is: electricity_duty (PKR 29.41), gst (PKR 520.21), and municipal_tax (PKR 20.0)."
+LESCO_0005,Q1,How much of my bill is taxes?,"Taxes make up 16.2% of your current bill (PKR 3358.23 out of PKR 20726), based on computed calculations."
+LESCO_0005,Q2,How many months in my history went above 200 units?,"Based on 12 months of recorded history, there are 3 months in your history that went above 200 units: JUL 25 (781 units), AUG 25 (225 units), and JAN 26 (359 units). If you also include your current billing month which exceeds 200 units, the total is 4 months."
+LESCO_0005,Q3,How many units did I consume this month compared to my historical average?,"You consumed 1017 units this month. Based on 12 months of recorded history, this is 1324.58 units higher than your average (0.0% above average)."
+LESCO_0005,Q4,What is the single largest charge on my bill?,This could not be determined from the bill.
+LESCO_0005,Q5,When is the due date for this bill and how much should I pay?,"The due date for this bill is 2026-07-30. You have a credit balance/credit carried forward, so the payable amount within the due date is PKR -54770 (54770CR)."
+LESCO_0005,Q6,How much will I have to pay if I pay after the due date?,This could not be determined from the bill.
+LESCO_0005,Q7,What is the Fuel Price Adjustment (FPA) charge on this bill?,This could not be determined from the bill.
+LESCO_0005,Q8,Do I have any previous dues or arrears carry-forward on this bill?,"Yes, you have previous dues or arrears of PKR -75496, which represents a credit carried forward."
+LESCO_0005,Q9,What was my highest monthly consumption recorded in the history table?,Your highest monthly consumption recorded in the history table was JUL 25 with 781 units.
+LESCO_0005,Q10,What is my sanctioned load and tariff category?,Your sanctioned load is 10 kW and your tariff category is A-1b(03).
+LESCO_0005,Q11,What are the meter reading dates and readings for this billing cycle?,"The reading date for this billing cycle is 2026-07-17, with a previous reading of 11561 and a current reading of 12578, resulting in 1017 units consumed."
+LESCO_0005,Q12,Can you provide a breakdown of all the taxes and duties charged?,This could not be determined from the bill.
+LESCO_0006,Q1,How much of my bill is taxes?,"Taxes on your current bill total PKR 1723.51, which is computed to be 31.33% of your current bill (PKR 1723.51 out of PKR 5501)."
+LESCO_0006,Q2,How many months in my history went above 200 units?,"Based on the provided history table containing 12 months, there are 9 months that went above 200 units. These months are: AUG 25 (440 units), SEP 25 (407 units), OCT 25 (243 units), DEC 25 (206 units), MAR 26 (257 units), APR 26 (264 units), MAY 26 (434 units), JUN 26 (350 units), and JUL 26 (225 units)."
+LESCO_0006,Q3,How many units did I consume this month compared to my historical average?,"You consumed 65 units this month. Based on 12 months of recorded history, your historical average is 275.25 units per month. Your consumption this month is computed to be 210.25 units lower than average (76.39% below average)."
+LESCO_0006,Q4,What is the single largest charge on my bill?,"The single largest charge on your bill is energy, amounting to PKR 3777.49."
+LESCO_0006,Q5,When is the due date for this bill and how much should I pay?,"The due date for this bill is 2026-09-09. If you pay within the due date, the payable amount is PKR 44912, which includes your current bill and arrears."
+LESCO_0006,Q6,How much will I have to pay if I pay after the due date?,"If you pay after the due date, you will have to pay PKR 45263, which is computed to be PKR 351 higher than the amount due within the due date."
+LESCO_0006,Q7,What is the Fuel Price Adjustment (FPA) charge on this bill?,This could not be determined from the bill.
+LESCO_0006,Q8,Do I have any previous dues or arrears carry-forward on this bill?,"Yes, you have previous dues or arrears carry-forward amounting to PKR 39411."
+LESCO_0006,Q9,What was my highest monthly consumption recorded in the history table?,Your highest monthly consumption recorded in the history table was 440 units in AUG 25.
+LESCO_0006,Q10,What is my sanctioned load and tariff category?,"Your sanctioned load is 1 kW, and your tariff category is A-2a(04)."
+LESCO_0006,Q11,What are the meter reading dates and readings for this billing cycle?,The reading date for this billing cycle is 2026-08-26. The previous meter reading was 22238 and the current meter reading is 22303.
+LESCO_0006,Q12,Can you provide a breakdown of all the taxes and duties charged?,This could not be determined from the bill.
