@@ -174,6 +174,7 @@ async def decode_bill_endpoint(
             questions=questions_list,
             client=client,
             tracker=tracker,
+            force_no_cache=True,
         )
 
         return {

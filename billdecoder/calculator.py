@@ -16,21 +16,28 @@ def compute_bill_stats(bill: Level1Bill, history: List[HistoryRow]) -> Dict[str,
     total_taxes = bill.total_taxes
     total_charges = bill.total_charges
 
-    if current_bill and current_bill > 0 and total_taxes is not None:
-        tax_pct = round((total_taxes / current_bill) * 100.0, 2)
+    # Base denominator: current_bill if > 0, fallback to total_charges + total_taxes
+    denom = current_bill if (current_bill and current_bill > 0) else None
+    if denom is None and total_charges is not None and total_taxes is not None:
+        combined = total_charges + total_taxes
+        if combined > 0:
+            denom = combined
+
+    if denom and denom > 0 and total_taxes is not None:
+        tax_pct = round((total_taxes / denom) * 100.0, 2)
         stats["tax_share_pct"] = tax_pct
-        stats["tax_share_text"] = f"{tax_pct}% of current bill (PKR {total_taxes} out of PKR {current_bill})"
+        stats["tax_share_text"] = f"{tax_pct}% of bill (PKR {total_taxes} out of PKR {denom})"
     else:
         stats["tax_share_pct"] = None
-        stats["tax_share_text"] = "Unavailable"
+        stats["tax_share_text"] = "cannot be determined"
 
-    if current_bill and current_bill > 0 and total_charges is not None:
-        charges_pct = round((total_charges / current_bill) * 100.0, 2)
+    if denom and denom > 0 and total_charges is not None:
+        charges_pct = round((total_charges / denom) * 100.0, 2)
         stats["charges_share_pct"] = charges_pct
-        stats["charges_share_text"] = f"{charges_pct}% of current bill"
+        stats["charges_share_text"] = f"{charges_pct}% of bill"
     else:
         stats["charges_share_pct"] = None
-        stats["charges_share_text"] = "Unavailable"
+        stats["charges_share_text"] = "cannot be determined"
 
     # Tax line details
     tax_lines = []

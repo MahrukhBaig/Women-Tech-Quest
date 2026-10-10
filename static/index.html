@@ -73,7 +73,18 @@
             </div>
 
             <div id="preview-box" class="preview-box" style="display: none;">
-              <img id="bill-preview-img" class="bill-preview-img" src="" alt="Selected bill preview">
+              <div class="preview-img-container" id="preview-clickable-container" title="Click to enlarge">
+                <img id="bill-preview-img" class="bill-preview-img" src="" alt="Selected bill preview">
+                <div class="preview-zoom-hint">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="11" cy="11" r="8"></circle>
+                    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                    <line x1="11" y1="8" x2="11" y2="14"></line>
+                    <line x1="8" y1="11" x2="14" y2="11"></line>
+                  </svg>
+                  <span>Click to enlarge</span>
+                </div>
+              </div>
               <div class="preview-overlay">
                 <span id="preview-file-label" class="file-label">Bill Image</span>
                 <button id="btn-change-file" class="btn-small-danger" type="button">Change</button>
@@ -82,14 +93,14 @@
           </div>
 
           <!-- Sample Quick Loaders -->
-          <div class="sample-section">
+          <div class="sample-section" id="sample-section">
             <span class="sample-title">Quick test samples:</span>
-            <div class="chip-container">
-              <button class="chip" data-sample="KESC_0008.png" type="button">KESC_0008 (Golden)</button>
-              <button class="chip" data-sample="IESCO_0004.jpg" type="button">IESCO_0004 (Subsidy)</button>
-              <button class="chip" data-sample="KESC_0004.png" type="button">KESC_0004 (Net-Meter)</button>
-              <button class="chip" data-sample="LESCO_0005.png" type="button">LESCO_0005 (Totals)</button>
-              <button class="chip" data-sample="LESCO_0006.png" type="button">LESCO_0006 (Commercial)</button>
+            <div class="chip-container" id="sample-chips-container">
+              <button class="chip" data-sample="KESC_0008.png" type="button">KE Standard (KESC_0008)</button>
+              <button class="chip" data-sample="IESCO_0004.jpg" type="button">IESCO Subsidy (IESCO_0004)</button>
+              <button class="chip" data-sample="KESC_0004.png" type="button">KE Net-Metered (KESC_0004)</button>
+              <button class="chip" data-sample="LESCO_0005.png" type="button">LESCO High-Load (LESCO_0005)</button>
+              <button class="chip" data-sample="LESCO_0006.png" type="button">LESCO Commercial (LESCO_0006)</button>
             </div>
           </div>
 
@@ -142,16 +153,16 @@
         <!-- Navigation Tabs -->
         <nav class="nav-tabs" role="tablist">
           <button id="tab-overview" class="tab-item active" role="tab" aria-selected="true" data-target="view-overview" type="button">
-            Bill Summary & Breakdown
+            Bill details
           </button>
           <button id="tab-qa" class="tab-item" role="tab" aria-selected="false" data-target="view-qa" type="button">
-            Ask Questions (Level 2)
+            Ask about your bill
           </button>
           <button id="tab-raw" class="tab-item" role="tab" aria-selected="false" data-target="view-raw" type="button">
-            Level 1 JSON & Diagnostics
+            Technical data (JSON)
           </button>
           <button id="tab-batch" class="tab-item" role="tab" aria-selected="false" data-target="view-batch" type="button">
-            Batch Mode
+            Run all bills (CLI)
           </button>
         </nav>
 
@@ -163,13 +174,13 @@
             <line x1="9" y1="21" x2="9" y2="9"></line>
           </svg>
           <h2>No bill decoded yet</h2>
-          <p>Select a bill image or test sample to view verified Level 1 extraction, precomputed stats, and customer explanations.</p>
+          <p>Select a bill image or test sample to view extracted details, precomputed stats, and customer explanations.</p>
         </div>
 
         <!-- Populated Results Container -->
         <div id="results-wrapper" class="results-wrapper" style="display: none;">
           
-          <!-- View 1: Summary & Breakdown -->
+          <!-- View 1: Bill details -->
           <div id="view-overview" class="tab-view active">
             
             <!-- Hero Metric Card -->
@@ -184,7 +195,7 @@
                 </div>
                 <div class="due-status">
                   <span id="hero-due-badge" class="due-badge">Due Date: 2026-04-21</span>
-                  <span id="hero-days-left" class="days-chip">Upcoming</span>
+                  <span id="hero-days-left" class="days-chip" style="display: none;">Upcoming</span>
                 </div>
               </div>
 
@@ -192,15 +203,15 @@
                 <div class="amount-main">
                   <span class="amount-title">Payable by Due Date</span>
                   <div class="amount-val-group">
-                    <span class="currency-tag">PKR</span>
-                    <span id="hero-payable-val" class="amount-huge">3,430</span>
+                    <span id="hero-payable-currency" class="currency-tag">PKR</span>
+                    <span id="hero-payable-val" class="amount-huge">3,430.00</span>
                   </div>
                 </div>
                 <div class="amount-late">
                   <span class="amount-title">Payable After Due Date</span>
                   <div class="amount-val-group">
-                    <span class="currency-tag">PKR</span>
-                    <span id="hero-late-val" class="amount-medium">3,716</span>
+                    <span id="hero-late-currency" class="currency-tag">PKR</span>
+                    <span id="hero-late-val" class="amount-medium">3,716.00</span>
                   </div>
                 </div>
                 <div class="metric-block">
@@ -214,7 +225,7 @@
             <!-- Precomputed Tax & Energy Proportion Card -->
             <div class="card chart-card">
               <div class="card-title-row">
-                <h3>Energy Charges vs. Taxes Breakdown</h3>
+                <h3>Electricity Charges vs. Taxes Share</h3>
                 <span id="tax-share-pill" class="pill-stat">Taxes: 16.61%</span>
               </div>
               <div id="proportion-chart-container" class="proportion-chart-container">
@@ -232,7 +243,7 @@
               <div class="card table-card">
                 <div class="card-title-row">
                   <h3>Electricity Charges</h3>
-                  <span id="charges-subtotal-badge" class="badge-subtotal">Total: PKR 0</span>
+                  <span id="charges-subtotal-badge" class="badge-subtotal">Total: PKR 0.00</span>
                 </div>
                 <div class="table-wrap">
                   <table class="clean-table" aria-label="Itemized charges table">
@@ -250,7 +261,7 @@
               <div class="card table-card">
                 <div class="card-title-row">
                   <h3>Taxes & Government Duties</h3>
-                  <span id="taxes-subtotal-badge" class="badge-subtotal">Total: PKR 0</span>
+                  <span id="taxes-subtotal-badge" class="badge-subtotal">Total: PKR 0.00</span>
                 </div>
                 <div class="table-wrap">
                   <table class="clean-table" aria-label="Itemized taxes table">
@@ -275,22 +286,14 @@
                 <!-- Inline SVG Bar Chart -->
               </div>
             </div>
-
-            <!-- Reconciliation Notices (Collapsible) -->
-            <details id="warnings-details" class="card warning-card" style="display: none;">
-              <summary class="warning-summary">
-                <span>System Reconciliation Notices (<span id="warnings-count">0</span>)</span>
-              </summary>
-              <ul id="warnings-list" class="warning-list"></ul>
-            </details>
           </div>
 
-          <!-- View 2: Customer Q&A -->
+          <!-- View 2: Ask about your bill -->
           <div id="view-qa" class="tab-view">
             <div class="card qa-wrapper-card">
               <div class="card-title-row">
-                <h3>Customer Explanations (Level 2)</h3>
-                <span class="tag-pill">Grounded in Bill &bull; Plain English</span>
+                <h3>Ask About Your Bill</h3>
+                <span class="tag-pill">Plain English &bull; Instant Answers</span>
               </div>
               
               <!-- Quick Question Suggestion Chips -->
@@ -304,6 +307,14 @@
                 </div>
               </div>
 
+              <!-- Custom Question Free-Text Input -->
+              <div class="custom-ask-container">
+                <div class="custom-ask-row">
+                  <input type="text" id="input-custom-q" class="input-custom-q" placeholder="Type a custom question about this bill..." />
+                  <button id="btn-ask-custom" class="btn-ask-custom" type="button">Ask</button>
+                </div>
+              </div>
+
               <!-- Chat/Bubble Stream -->
               <div id="qa-chat-stream" class="qa-chat-stream">
                 <!-- Dynamically populated Q&A bubbles -->
@@ -311,8 +322,19 @@
             </div>
           </div>
 
-          <!-- View 3: Raw Level 1 JSON -->
+          <!-- View 3: Technical data (JSON) -->
           <div id="view-raw" class="tab-view">
+            <!-- Reconciliation Notices (Collapsible in Technical Tab) -->
+            <details id="warnings-details" class="card warning-card" style="display: none; margin-bottom: 1.5rem;">
+              <summary class="warning-summary">
+                <span>System Diagnostics & Reconciliation Notices (<span id="warnings-count">0</span>)</span>
+              </summary>
+              <p class="warning-intro text-muted">
+                Reconciliation cross-checks verify mathematical balance between extracted line items, subtotals, and payable amounts.
+              </p>
+              <ul id="warnings-list" class="warning-list"></ul>
+            </details>
+
             <div class="card json-card">
               <div class="card-title-row">
                 <h3>Level 1 Structured JSON Output</h3>
@@ -325,21 +347,39 @@
             </div>
           </div>
 
-          <!-- View 4: Batch Processing -->
+          <!-- View 4: Run all bills (CLI) -->
           <div id="view-batch" class="tab-view">
             <div class="card batch-card">
               <div class="card-title-row">
-                <h3>Batch Folder Processing (Scored CLI)</h3>
-                <span class="tag-pill">CLI Automation</span>
+                <h3>Run All Bills (CLI Pipeline)</h3>
+                <span class="tag-pill">Scored CLI Automation</span>
               </div>
               <p class="batch-intro">
                 For competition evaluation, the scored <code>level1.csv</code> and <code>level2.csv</code> are generated via the deterministic CLI engine.
               </p>
-              <div class="code-box">
-                <code>python -m billdecoder.cli --bills-dir test/bills --level1-template test/csv/level1.csv --level2-template test/csv/level2.csv --output-dir output</code>
+
+              <div class="cli-command-block">
+                <div class="cli-block-header">
+                  <span class="cli-block-title">PowerShell (Windows)</span>
+                  <button class="btn-copy-cli" data-code="&amp; .venv\Scripts\python -m billdecoder.cli --bills-dir test\bills --level1-template test\csv\level1.csv --level2-template test\csv\level2.csv --output-dir output" type="button">Copy</button>
+                </div>
+                <div class="code-box">
+                  <code>&amp; .venv\Scripts\python -m billdecoder.cli --bills-dir test\bills --level1-template test\csv\level1.csv --level2-template test\csv\level2.csv --output-dir output</code>
+                </div>
               </div>
+
+              <div class="cli-command-block" style="margin-top: 1rem;">
+                <div class="cli-block-header">
+                  <span class="cli-block-title">Bash (macOS / Linux)</span>
+                  <button class="btn-copy-cli" data-code="python -m billdecoder.cli --bills-dir test/bills --level1-template test/csv/level1.csv --level2-template test/csv/level2.csv --output-dir output" type="button">Copy</button>
+                </div>
+                <div class="code-box">
+                  <code>python -m billdecoder.cli --bills-dir test/bills --level1-template test/csv/level1.csv --level2-template test/csv/level2.csv --output-dir output</code>
+                </div>
+              </div>
+
               <p class="batch-note">
-                Output files are created at <code>output/level1.csv</code> and <code>output/level2.csv</code> strictly preserving template IDs and ordering.
+                Output files are generated into <code>output/level1.csv</code> and <code>output/level2.csv</code> strictly preserving template IDs and ordering.
               </p>
             </div>
           </div>
@@ -347,6 +387,20 @@
         </div>
       </section>
     </main>
+
+    <!-- Click-to-Enlarge Modal -->
+    <div id="image-modal" class="image-modal" style="display: none;" role="dialog" aria-modal="true" aria-label="Enlarged Bill View">
+      <div class="modal-backdrop" id="modal-backdrop"></div>
+      <div class="modal-content">
+        <div class="modal-header">
+          <span id="modal-title" class="modal-title">Bill Image Preview</span>
+          <button id="btn-close-modal" class="btn-close-modal" aria-label="Close modal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <img id="modal-img" class="modal-img" src="" alt="Enlarged utility bill">
+        </div>
+      </div>
+    </div>
 
     <!-- Footer -->
     <footer class="app-footer">

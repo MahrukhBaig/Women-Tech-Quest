@@ -35,6 +35,7 @@ document.addEventListener("DOMContentLoaded", () => {
   const dropzoneEmpty = document.getElementById("dropzone-empty");
   const previewBox = document.getElementById("preview-box");
   const previewImg = document.getElementById("bill-preview-img");
+  const previewClickableContainer = document.getElementById("preview-clickable-container");
   const previewLabel = document.getElementById("preview-file-label");
   const btnChangeFile = document.getElementById("btn-change-file");
   const btnDecode = document.getElementById("btn-decode");
@@ -53,30 +54,83 @@ document.addEventListener("DOMContentLoaded", () => {
   const sampleChips = document.querySelectorAll(".chip");
   const questionChips = document.querySelectorAll(".chip-q");
 
+  // Modal Elements
+  const imageModal = document.getElementById("image-modal");
+  const modalImg = document.getElementById("modal-img");
+  const modalBackdrop = document.getElementById("modal-backdrop");
+  const btnCloseModal = document.getElementById("btn-close-modal");
+
+  // Custom Ask Box
+  const inputCustomQ = document.getElementById("input-custom-q");
+  const btnAskCustom = document.getElementById("btn-ask-custom");
+
   // State
   let selectedFile = null;
   let activeAbortController = null;
   let lastDecodedPayload = null;
+  let isSampleBill = false;
 
   // Type Mappings for Plain English display
   const CHARGE_LABELS = {
-    energy: "Energy charges (units consumed)",
+    energy: "Energy charges",
     fixed: "Fixed charges",
-    fpa: "Fuel price adjustment (FPA / FCA)",
+    fpa: "Fuel price adjustment (FPA)",
     quarterly_adjustment: "Quarterly tariff adjustment (QTA)",
-    surcharge: "Additional surcharge (PHL / FC)",
-    meter_rent: "Meter / service rent",
-    subsidy: "Government relief / subsidy",
-    other: "Other charges",
+    surcharge: "Surcharges & financing cost",
+    meter_rent: "Meter rent",
+    subsidy: "Government relief subsidy",
+    other: "Other electricity charge",
   };
 
   const TAX_LABELS = {
-    gst: "General Sales Tax (GST)",
-    electricity_duty: "Electricity Duty (ED)",
-    income_tax: "Income Tax / Advance IT",
-    municipal_tax: "Municipal / Local Tax (MUCT/KMC)",
-    other_tax: "Other taxes & TV fee",
+    gst: "Sales tax (GST)",
+    electricity_duty: "Electricity duty",
+    income_tax: "Income tax",
+    municipal_tax: "Municipal tax",
+    other_tax: "Other government duty/tax",
   };
+
+  const STANDARD_QUESTIONS = {
+    Q1: "Is this a net-metered (solar) connection or a standard connection? How did you tell?",
+    Q2: "Which month in the last 12 months had the highest units consumed?",
+    Q3: "How much fuel adjustment am I being charged (shown as FPA or FCA on the bill), and for which month?",
+    Q4: "If I don't pay on time, what late payment surcharges will be added?",
+    Q5: "Am I consuming more units than in the same month last year?",
+    Q6: "What are my average monthly units consumed, and how does this month compare?",
+    Q7: "How many more units do I consume in summer (June-August) than in winter (December-February)?",
+    Q8: "Looking at the payments for the 12 months shown on the bill, have I been paying every bill?",
+    Q9: "Have my units consumed gone up or down over the last 3 months?",
+    Q10: "Based on the 12 months trend, how many units should I expect to consume next month?",
+    Q11: "If I wanted to spread my electricity cost evenly across the year, how much should I set aside each month?",
+    Q12: "If I consume the same units as last month, what would my bill be roughly?",
+    Q_above200: "In how many months in the billing history did my consumption go above 200 units?",
+    Q_tax_pct: "What percentage of my current bill goes toward taxes and government charges?",
+    Q_largest: "What is the single largest charge on my bill?",
+    Q_due: "When is the due date for this bill and how much should I pay?",
+  };
+
+  // Image Modal Handler
+  if (previewClickableContainer) {
+    previewClickableContainer.addEventListener("click", () => {
+      if (previewImg.src) {
+        modalImg.src = previewImg.src;
+        imageModal.style.display = "flex";
+      }
+    });
+  }
+
+  function closeModal() {
+    imageModal.style.display = "none";
+    modalImg.src = "";
+  }
+
+  if (btnCloseModal) btnCloseModal.addEventListener("click", closeModal);
+  if (modalBackdrop) modalBackdrop.addEventListener("click", closeModal);
+  document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && imageModal.style.display === "flex") {
+      closeModal();
+    }
+  });
 
   // Drag and Drop
   ["dragenter", "dragover"].forEach(evt => {
@@ -95,6 +149,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   dropzone.addEventListener("drop", (e) => {
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      isSampleBill = false;
       processSelectedFile(e.dataTransfer.files[0]);
     }
   });
@@ -107,6 +162,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   fileInput.addEventListener("change", (e) => {
     if (e.target.files && e.target.files.length > 0) {
+      isSampleBill = false;
       processSelectedFile(e.target.files[0]);
     }
   });
@@ -119,6 +175,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
   function resetUploadState() {
     selectedFile = null;
+    isSampleBill = false;
     fileInput.value = "";
     previewImg.src = "";
     previewBox.style.display = "none";
@@ -139,7 +196,6 @@ document.addEventListener("DOMContentLoaded", () => {
     }
 
     selectedFile = file;
-    // Anonymize filename display: avoid showing raw digits as IDs
     previewLabel.textContent = "Bill Image (" + (file.size / 1024).toFixed(0) + " KB)";
 
     const reader = new FileReader();
@@ -159,12 +215,16 @@ document.addEventListener("DOMContentLoaded", () => {
       showAlert("Loading sample bill...", false);
       try {
         const resp = await fetch("/sample-bills/" + sampleFile);
-        if (!resp.ok) throw new Error("Sample file not available.");
+        if (!resp.ok) {
+          chip.style.display = "none";
+          throw new Error("Sample file not available.");
+        }
         const blob = await resp.blob();
         const file = new File([blob], sampleFile, { type: blob.type || "image/png" });
+        isSampleBill = true;
         processSelectedFile(file);
       } catch (err) {
-        showAlert("Failed to load sample: " + err.message);
+        showAlert("Sample note: " + err.message, false);
       }
     });
   });
@@ -317,9 +377,9 @@ document.addEventListener("DOMContentLoaded", () => {
     const dueBadge = document.getElementById("hero-due-badge");
     dueBadge.textContent = l1.due_date ? "Due: " + l1.due_date : "Due: Not on bill";
 
-    // Days left calculation
+    // Days left calculation - hide for historical sample bills
     const daysChip = document.getElementById("hero-days-left");
-    if (l1.due_date) {
+    if (!isSampleBill && l1.due_date) {
       const parts = l1.due_date.split("-");
       if (parts.length === 3) {
         const dueDateObj = new Date(parseInt(parts[0]), parseInt(parts[1]) - 1, parseInt(parts[2]));
@@ -328,28 +388,55 @@ document.addEventListener("DOMContentLoaded", () => {
         if (diffDays < 0) {
           daysChip.textContent = Math.abs(diffDays) + " days overdue";
           daysChip.className = "days-chip overdue";
+          daysChip.style.display = "inline-block";
         } else if (diffDays === 0) {
           daysChip.textContent = "Due today";
           daysChip.className = "days-chip";
+          daysChip.style.display = "inline-block";
         } else {
           daysChip.textContent = diffDays + " days left";
           daysChip.className = "days-chip";
+          daysChip.style.display = "inline-block";
         }
       }
     } else {
-      daysChip.textContent = "No date";
-      daysChip.className = "days-chip";
+      daysChip.style.display = "none";
     }
 
+    // Hero amounts (handle negative credits and nulls)
     const payVal = document.getElementById("hero-payable-val");
-    payVal.textContent = l1.payable_within_due_date != null ?
-      Number(l1.payable_within_due_date).toLocaleString(undefined, { minimumFractionDigits: 0 }) :
-      "Not on bill";
+    const payCurrency = document.getElementById("hero-payable-currency");
+    if (l1.payable_within_due_date != null) {
+      const pVal = Number(l1.payable_within_due_date);
+      if (pVal < 0) {
+        payCurrency.style.display = "none";
+        payVal.className = "amount-huge amount-credit-neutral";
+        payVal.textContent = "Credit: PKR " + Math.abs(pVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " (nothing to pay)";
+      } else {
+        payCurrency.style.display = "inline";
+        payVal.className = "amount-huge";
+        payVal.textContent = pVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+      }
+    } else {
+      payCurrency.style.display = "none";
+      payVal.className = "amount-huge";
+      payVal.textContent = "Not on bill";
+    }
 
     const lateVal = document.getElementById("hero-late-val");
-    lateVal.textContent = l1.payable_after_due_date != null ?
-      Number(l1.payable_after_due_date).toLocaleString(undefined, { minimumFractionDigits: 0 }) :
-      "Not on bill";
+    const lateCurrency = document.getElementById("hero-late-currency");
+    if (l1.payable_after_due_date != null) {
+      const lVal = Number(l1.payable_after_due_date);
+      lateCurrency.style.display = "inline";
+      lateVal.textContent = lVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+      lateCurrency.style.display = "none";
+      if (l1.payable_within_due_date != null && Number(l1.payable_within_due_date) <= 0) {
+        lateVal.textContent = "Not to be paid";
+      } else {
+        lateVal.textContent = "Not on bill";
+      }
+    }
 
     const unitsVal = document.getElementById("hero-units-val");
     unitsVal.textContent = l1.units_consumed != null ?
@@ -366,11 +453,18 @@ document.addEventListener("DOMContentLoaded", () => {
     const chartWrap = document.getElementById("proportion-svg-wrapper");
     chartWrap.textContent = "";
 
-    if (stats.tax_share_pct != null && l1.total_charges != null && l1.total_taxes != null) {
-      taxPill.textContent = "Taxes: " + stats.tax_share_pct + "%";
-      const chargesPct = stats.charges_share_pct || (100 - stats.tax_share_pct);
+    // Correct denominator: current_bill (fallback: total_charges + total_taxes)
+    let denom = (l1.current_bill && l1.current_bill > 0) ? l1.current_bill : null;
+    if (denom == null && l1.total_charges != null && l1.total_taxes != null) {
+      const comb = l1.total_charges + l1.total_taxes;
+      if (comb > 0) denom = comb;
+    }
 
-      // Create Stacked Bar SVG
+    if (denom != null && l1.total_taxes != null && l1.total_charges != null) {
+      const taxPct = Number(((l1.total_taxes / denom) * 100).toFixed(1));
+      const chargesPct = Number(((l1.total_charges / denom) * 100).toFixed(1));
+      taxPill.textContent = "Taxes: " + taxPct + "%";
+
       const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
       svg.setAttribute("width", "100%");
       svg.setAttribute("height", "28");
@@ -388,7 +482,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const rectTax = document.createElementNS("http://www.w3.org/2000/svg", "rect");
       rectTax.setAttribute("x", String(chargesPct));
       rectTax.setAttribute("y", "0");
-      rectTax.setAttribute("width", String(stats.tax_share_pct));
+      rectTax.setAttribute("width", String(taxPct));
       rectTax.setAttribute("height", "8");
       rectTax.setAttribute("fill", "#10b981");
       rectTax.setAttribute("rx", "2");
@@ -398,11 +492,11 @@ document.addEventListener("DOMContentLoaded", () => {
       chartWrap.appendChild(svg);
 
       const expText = document.getElementById("stat-explanation-text");
-      expText.textContent = "Electricity charges: PKR " + l1.total_charges.toLocaleString() + " (" + chargesPct.toFixed(1) + "%) | Taxes & duties: PKR " + l1.total_taxes.toLocaleString() + " (" + stats.tax_share_pct.toFixed(1) + "%).";
+      expText.textContent = "Electricity charges: PKR " + Number(l1.total_charges).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " (" + chargesPct.toFixed(1) + "%) | Taxes & duties: PKR " + Number(l1.total_taxes).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " (" + taxPct.toFixed(1) + "%).";
     } else {
-      taxPill.textContent = "Not Itemized";
+      taxPill.textContent = "cannot be determined";
       const expText = document.getElementById("stat-explanation-text");
-      expText.textContent = "Charges and taxes subtotals are not separately itemized on this bill.";
+      expText.textContent = "Charges and taxes percentage breakdown cannot be determined from the bill.";
     }
 
     // 3. Itemized Charges Table
@@ -414,7 +508,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const emptyTd = document.createElement("td");
       emptyTd.setAttribute("colspan", "2");
       emptyTd.className = "text-muted";
-      emptyTd.textContent = "No itemized charges printed on bill (subtotal: PKR " + (l1.total_charges != null ? l1.total_charges.toLocaleString() : "N/A") + ")";
+      emptyTd.textContent = "No itemized charges printed on bill (subtotal: PKR " + (l1.total_charges != null ? Number(l1.total_charges).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "N/A") + ")";
       emptyTr.appendChild(emptyTd);
       tbodyCharges.appendChild(emptyTr);
     } else {
@@ -433,9 +527,9 @@ document.addEventListener("DOMContentLoaded", () => {
         tdAmt.className = "col-num";
         if (c.amount < 0) {
           tdAmt.style.color = "var(--accent-primary)";
-          tdAmt.textContent = "-PKR " + Math.abs(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2 });
+          tdAmt.textContent = "-PKR " + Math.abs(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         } else {
-          tdAmt.textContent = "PKR " + Number(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2 });
+          tdAmt.textContent = "PKR " + Number(c.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         tr.appendChild(tdName);
@@ -444,7 +538,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
     const chargesBadge = document.getElementById("charges-subtotal-badge");
-    chargesBadge.textContent = "Total: PKR " + (l1.total_charges != null ? l1.total_charges.toLocaleString() : "Not on bill");
+    chargesBadge.textContent = "Total: " + (l1.total_charges != null ? "PKR " + Number(l1.total_charges).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "Not on bill");
 
     // 4. Itemized Taxes Table
     const taxes = l1.taxes || [];
@@ -455,7 +549,7 @@ document.addEventListener("DOMContentLoaded", () => {
       const emptyTd = document.createElement("td");
       emptyTd.setAttribute("colspan", "2");
       emptyTd.className = "text-muted";
-      emptyTd.textContent = "No itemized taxes printed (total taxes: PKR " + (l1.total_taxes != null ? l1.total_taxes.toLocaleString() : "N/A") + ")";
+      emptyTd.textContent = "No itemized taxes printed (total taxes: " + (l1.total_taxes != null ? "PKR " + Number(l1.total_taxes).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "N/A") + ")";
       emptyTr.appendChild(emptyTd);
       tbodyTaxes.appendChild(emptyTr);
     } else {
@@ -466,7 +560,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const tdAmt = document.createElement("td");
         tdAmt.className = "col-num";
-        tdAmt.textContent = "PKR " + Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2 });
+        tdAmt.textContent = "PKR " + Number(t.amount).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
         tr.appendChild(tdName);
         tr.appendChild(tdAmt);
@@ -474,7 +568,7 @@ document.addEventListener("DOMContentLoaded", () => {
       });
     }
     const taxesBadge = document.getElementById("taxes-subtotal-badge");
-    taxesBadge.textContent = "Total: PKR " + (l1.total_taxes != null ? l1.total_taxes.toLocaleString() : "Not on bill");
+    taxesBadge.textContent = "Total: " + (l1.total_taxes != null ? "PKR " + Number(l1.total_taxes).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : "Not on bill");
 
     // 5. Usage History Chart (SVG)
     const historySec = document.getElementById("history-section");
@@ -513,7 +607,6 @@ document.addEventListener("DOMContentLoaded", () => {
         const paddingBottom = 35;
         const chartH = svgH - paddingTop - paddingBottom;
 
-        // Zero baseline Y position
         const zeroY = paddingTop + (maxVal / range) * chartH;
 
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
@@ -521,7 +614,6 @@ document.addEventListener("DOMContentLoaded", () => {
         svg.setAttribute("height", String(svgH));
         svg.setAttribute("viewBox", "0 0 " + svgW + " " + svgH);
 
-        // Draw Zero Baseline if there are negative values
         if (minVal < 0) {
           const zeroLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
           zeroLine.setAttribute("x1", "0");
@@ -543,7 +635,6 @@ document.addEventListener("DOMContentLoaded", () => {
           const barH = (Math.abs(u) / range) * chartH;
           const barY = u >= 0 ? (zeroY - barH) : zeroY;
 
-          // Bar rect
           const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
           rect.setAttribute("x", String(x));
           rect.setAttribute("y", String(barY));
@@ -558,7 +649,6 @@ document.addEventListener("DOMContentLoaded", () => {
           }
           rect.setAttribute("rx", "3");
 
-          // Value Label (outside the bar)
           const txtUnits = document.createElementNS("http://www.w3.org/2000/svg", "text");
           txtUnits.setAttribute("x", String(x + barW / 2));
           if (u >= 0) {
@@ -572,7 +662,6 @@ document.addEventListener("DOMContentLoaded", () => {
           txtUnits.setAttribute("fill", "var(--text-muted)");
           txtUnits.textContent = String(u);
 
-          // Month Label (at bottom of chart, never overlapping bars)
           const txtMonth = document.createElementNS("http://www.w3.org/2000/svg", "text");
           txtMonth.setAttribute("x", String(x + barW / 2));
           txtMonth.setAttribute("y", String(svgH - 10));
@@ -592,7 +681,7 @@ document.addEventListener("DOMContentLoaded", () => {
       historySec.style.display = "none";
     }
 
-    // 6. Reconciliation Notices
+    // 6. Reconciliation Notices in Technical Tab
     const warnDetails = document.getElementById("warnings-details");
     const warnList = document.getElementById("warnings-list");
     warnList.textContent = "";
@@ -608,7 +697,7 @@ document.addEventListener("DOMContentLoaded", () => {
       warnDetails.style.display = "none";
     }
 
-    // 7. Q&A View (Chat bubbles)
+    // 7. Q&A View (Chat bubbles with full question text)
     const qaStream = document.getElementById("qa-chat-stream");
     qaStream.textContent = "";
     const entries = Object.entries(answers);
@@ -624,7 +713,7 @@ document.addEventListener("DOMContentLoaded", () => {
 
         const qBubble = document.createElement("div");
         qBubble.className = "qa-question-bubble";
-        qBubble.textContent = qid;
+        qBubble.textContent = STANDARD_QUESTIONS[qid] || qid;
 
         const aBubble = document.createElement("div");
         aBubble.className = "qa-answer-bubble";
@@ -636,17 +725,18 @@ document.addEventListener("DOMContentLoaded", () => {
         const footRow = document.createElement("div");
         footRow.className = "qa-footer-row";
 
-        if (ansText.toLowerCase().includes("computed") || ansText.toLowerCase().includes("calculated") || ansText.toLowerCase().includes("%")) {
+        const lower = ansText.toLowerCase();
+        if (lower.includes("could not be determined") || lower.includes("not on bill")) {
+          const missingBadge = document.createElement("span");
+          missingBadge.className = "text-muted";
+          missingBadge.style.fontSize = "10px";
+          missingBadge.textContent = "Not found on bill";
+          footRow.appendChild(missingBadge);
+        } else if (lower.includes("computed") || lower.includes("calculated") || lower.includes("%") || lower.includes("average") || lower.includes("sum")) {
           const calcBadge = document.createElement("span");
           calcBadge.className = "badge-calculated";
           calcBadge.textContent = "✓ Calculated";
           footRow.appendChild(calcBadge);
-        } else {
-          const groundBadge = document.createElement("span");
-          groundBadge.className = "text-muted";
-          groundBadge.style.fontSize = "10px";
-          groundBadge.textContent = "Grounded in bill";
-          footRow.appendChild(groundBadge);
         }
 
         const copyBtn = document.createElement("button");
@@ -677,10 +767,86 @@ document.addEventListener("DOMContentLoaded", () => {
   questionChips.forEach(chip => {
     chip.addEventListener("click", () => {
       const qText = chip.getAttribute("data-q");
-      // Find matching answer in current answers if exists
-      if (lastDecodedPayload && lastDecodedPayload.answers) {
-        // Switch to QA tab
-        document.getElementById("tab-qa").click();
+      if (inputCustomQ) {
+        inputCustomQ.value = qText;
+      }
+      document.getElementById("tab-qa").click();
+    });
+  });
+
+  // Custom Q&A Handler
+  if (btnAskCustom && inputCustomQ) {
+    function handleCustomAsk() {
+      const q = inputCustomQ.value.trim();
+      if (!q) return;
+      if (!lastDecodedPayload) {
+        showAlert("Please decode a bill first before asking questions.", false);
+        return;
+      }
+
+      const qaStream = document.getElementById("qa-chat-stream");
+      const group = document.createElement("div");
+      group.className = "qa-bubble-group";
+
+      const qBubble = document.createElement("div");
+      qBubble.className = "qa-question-bubble";
+      qBubble.textContent = q;
+
+      const aBubble = document.createElement("div");
+      aBubble.className = "qa-answer-bubble";
+
+      const pAns = document.createElement("p");
+      // Grounded answer from stats and level1
+      const l1 = lastDecodedPayload.level1 || {};
+      const stats = lastDecodedPayload.stats || {};
+      const lower = q.toLowerCase();
+
+      let ans = "";
+      if (lower.includes("tax")) {
+        ans = stats.tax_share_text ? "Based on precomputed stats: " + stats.tax_share_text : "This could not be determined from the bill.";
+      } else if (lower.includes("due") || lower.includes("pay")) {
+        const amt = l1.payable_within_due_date != null ? "PKR " + Number(l1.payable_within_due_date).toLocaleString() : "Not on bill";
+        ans = "The due date is " + (l1.due_date || "not stated") + " with amount payable within due date: " + amt + ".";
+      } else if (lower.includes("unit") || lower.includes("kwh") || lower.includes("consumption")) {
+        ans = "Current billed consumption is " + (l1.units_consumed != null ? l1.units_consumed + " units (kWh)" : "not on bill") + ".";
+      } else {
+        ans = "Based on extracted bill details: Provider is " + (l1.provider || "Unknown") + ", Month is " + (l1.bill_month || "Unknown") + ", and Current Bill is PKR " + (l1.current_bill != null ? Number(l1.current_bill).toLocaleString() : "Not on bill") + ".";
+      }
+
+      pAns.textContent = ans;
+      aBubble.appendChild(pAns);
+
+      const footRow = document.createElement("div");
+      footRow.className = "qa-footer-row";
+      const calcBadge = document.createElement("span");
+      calcBadge.className = "badge-calculated";
+      calcBadge.textContent = "✓ Calculated";
+      footRow.appendChild(calcBadge);
+
+      aBubble.appendChild(footRow);
+      group.appendChild(qBubble);
+      group.appendChild(aBubble);
+      qaStream.prepend(group);
+
+      inputCustomQ.value = "";
+    }
+
+    btnAskCustom.addEventListener("click", handleCustomAsk);
+    inputCustomQ.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") handleCustomAsk();
+    });
+  }
+
+  // Copy CLI commands
+  document.querySelectorAll(".btn-copy-cli").forEach(btn => {
+    btn.addEventListener("click", () => {
+      const code = btn.getAttribute("data-code");
+      if (code) {
+        navigator.clipboard.writeText(code).then(() => {
+          const original = btn.textContent;
+          btn.textContent = "Copied!";
+          setTimeout(() => { btn.textContent = original; }, 1500);
+        });
       }
     });
   });

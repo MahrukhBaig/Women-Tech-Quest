@@ -66,7 +66,8 @@ def collect_source_files() -> List[Path]:
     included: List[Path] = []
     excluded_names = {
         ".env", ".venv", "__pycache__", ".git", ".cache", "node_modules",
-        "bill_cache", ".pytest_cache", "scratch_guide.txt", "guide_clean.txt"
+        "bill_cache", ".pytest_cache", "scratch_guide.txt", "guide_clean.txt",
+        "bills", "dev_output", "train", "test", "demo_output"
     }
 
     # Core source files at root
