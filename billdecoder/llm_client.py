@@ -11,6 +11,7 @@ from typing import Any, Dict, List, Optional, Type, Union
 from PIL import Image
 
 from google import genai
+from google.genai import types
 from pydantic import BaseModel
 
 from billdecoder.config import settings, PROMPT_VERSION
@@ -60,16 +61,18 @@ class RateLimiter:
         self.lock = threading.Lock()
 
     def acquire(self) -> None:
-        with self.lock:
-            now = time.time()
-            # Retain only timestamps from the last 60 seconds
-            self.timestamps = [t for t in self.timestamps if now - t < 60.0]
-            if len(self.timestamps) >= self.max_rpm:
+        while True:
+            with self.lock:
+                now = time.time()
+                # Retain only timestamps from the last 60 seconds
+                self.timestamps = [t for t in self.timestamps if now - t < 60.0]
+                if len(self.timestamps) < self.max_rpm:
+                    self.timestamps.append(time.time())
+                    return
                 sleep_time = 60.0 - (now - self.timestamps[0]) + 0.1
-                if sleep_time > 0:
-                    logger.info("Rate limit throttle: sleeping %.2fs (limit=%d rpm)", sleep_time, self.max_rpm)
-                    time.sleep(sleep_time)
-            self.timestamps.append(time.time())
+            if sleep_time > 0:
+                logger.info("Rate limit throttle: sleeping %.2fs (limit=%d rpm)", sleep_time, self.max_rpm)
+                time.sleep(sleep_time)
 
 
 class GeminiClient:
@@ -77,7 +80,9 @@ class GeminiClient:
 
     def __init__(self) -> None:
         settings.validate_or_raise()
-        self.client = genai.Client(api_key=settings.api_key)
+        # Enforce 60-second HTTP timeout to prevent hanging sockets
+        http_opts = types.HttpOptions(timeout=60000)
+        self.client = genai.Client(api_key=settings.api_key, http_options=http_opts)
         self.model_name = settings.model_name
         self.rate_limiter = RateLimiter(settings.rate_limit_rpm)
         self.semaphore = threading.Semaphore(settings.max_concurrency)

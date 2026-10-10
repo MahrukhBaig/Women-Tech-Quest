@@ -487,47 +487,99 @@ document.addEventListener("DOMContentLoaded", () => {
 
       const validRows = history.filter(r => r.units != null && typeof r.units === "number");
       if (validRows.length > 0) {
-        const maxU = Math.max(...validRows.map(r => r.units), 100);
-        const svgW = 600;
-        const svgH = 140;
-        const barW = Math.max(16, (svgW / validRows.length) - 10);
+        function formatMonthLabel(m) {
+          if (!m) return "";
+          m = String(m).trim();
+          const ymMatch = m.match(/^(\d{4})-(\d{2})$/);
+          if (ymMatch) {
+            const months = ["JAN","FEB","MAR","APR","MAY","JUN","JUL","AUG","SEP","OCT","NOV","DEC"];
+            const mIdx = parseInt(ymMatch[2], 10) - 1;
+            const yr = ymMatch[1].slice(-2);
+            if (mIdx >= 0 && mIdx < 12) return months[mIdx] + " " + yr;
+          }
+          return m;
+        }
+
+        const unitsVals = validRows.map(r => Number(r.units));
+        const rawMax = Math.max(...unitsVals);
+        const rawMin = Math.min(...unitsVals);
+        const maxVal = Math.max(rawMax, 100);
+        const minVal = Math.min(rawMin, 0);
+        const range = (maxVal - minVal) || 1;
+
+        const svgW = 650;
+        const svgH = 170;
+        const paddingTop = 25;
+        const paddingBottom = 35;
+        const chartH = svgH - paddingTop - paddingBottom;
+
+        // Zero baseline Y position
+        const zeroY = paddingTop + (maxVal / range) * chartH;
 
         const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         svg.setAttribute("width", "100%");
-        svg.setAttribute("height", "140");
+        svg.setAttribute("height", String(svgH));
         svg.setAttribute("viewBox", "0 0 " + svgW + " " + svgH);
 
-        validRows.forEach((r, idx) => {
-          const x = idx * (svgW / validRows.length) + 8;
-          const barH = (r.units / maxU) * 90;
-          const y = 100 - barH;
+        // Draw Zero Baseline if there are negative values
+        if (minVal < 0) {
+          const zeroLine = document.createElementNS("http://www.w3.org/2000/svg", "line");
+          zeroLine.setAttribute("x1", "0");
+          zeroLine.setAttribute("y1", String(zeroY));
+          zeroLine.setAttribute("x2", String(svgW));
+          zeroLine.setAttribute("y2", String(zeroY));
+          zeroLine.setAttribute("stroke", "var(--border-strong, #888)");
+          zeroLine.setAttribute("stroke-dasharray", "3,3");
+          zeroLine.setAttribute("stroke-width", "1");
+          svg.appendChild(zeroLine);
+        }
 
-          // Bar
+        const colWidth = svgW / validRows.length;
+        const barW = Math.max(16, colWidth - 12);
+
+        validRows.forEach((r, idx) => {
+          const x = idx * colWidth + (colWidth - barW) / 2;
+          const u = Number(r.units);
+          const barH = (Math.abs(u) / range) * chartH;
+          const barY = u >= 0 ? (zeroY - barH) : zeroY;
+
+          // Bar rect
           const rect = document.createElementNS("http://www.w3.org/2000/svg", "rect");
           rect.setAttribute("x", String(x));
-          rect.setAttribute("y", String(y));
+          rect.setAttribute("y", String(barY));
           rect.setAttribute("width", String(barW));
-          rect.setAttribute("height", String(barH));
-          rect.setAttribute("fill", r.units > 200 ? "var(--accent-warning)" : "var(--accent-info)");
+          rect.setAttribute("height", String(Math.max(barH, 2)));
+          if (u < 0) {
+            rect.setAttribute("fill", "var(--accent-danger, #ef4444)");
+          } else if (u > 200) {
+            rect.setAttribute("fill", "var(--accent-warning, #f59e0b)");
+          } else {
+            rect.setAttribute("fill", "var(--accent-info, #38bdf8)");
+          }
           rect.setAttribute("rx", "3");
 
-          // Text Units
+          // Value Label (outside the bar)
           const txtUnits = document.createElementNS("http://www.w3.org/2000/svg", "text");
           txtUnits.setAttribute("x", String(x + barW / 2));
-          txtUnits.setAttribute("y", String(y - 4));
+          if (u >= 0) {
+            txtUnits.setAttribute("y", String(Math.max(barY - 5, 12)));
+          } else {
+            txtUnits.setAttribute("y", String(Math.min(barY + barH + 12, svgH - paddingBottom + 10)));
+          }
           txtUnits.setAttribute("text-anchor", "middle");
           txtUnits.setAttribute("font-size", "10");
+          txtUnits.setAttribute("font-weight", "500");
           txtUnits.setAttribute("fill", "var(--text-muted)");
-          txtUnits.textContent = String(r.units);
+          txtUnits.textContent = String(u);
 
-          // Text Month
+          // Month Label (at bottom of chart, never overlapping bars)
           const txtMonth = document.createElementNS("http://www.w3.org/2000/svg", "text");
           txtMonth.setAttribute("x", String(x + barW / 2));
-          txtMonth.setAttribute("y", "122");
+          txtMonth.setAttribute("y", String(svgH - 10));
           txtMonth.setAttribute("text-anchor", "middle");
-          txtMonth.setAttribute("font-size", "9");
+          txtMonth.setAttribute("font-size", "9.5");
           txtMonth.setAttribute("fill", "var(--text-sub)");
-          txtMonth.textContent = r.month.slice(-5);
+          txtMonth.textContent = formatMonthLabel(r.month);
 
           svg.appendChild(rect);
           svg.appendChild(txtUnits);

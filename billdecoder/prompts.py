@@ -26,9 +26,9 @@ CRITICAL EXTRACTION RULES:
    - Types: gst (sales tax, GST on FPA), electricity_duty (ED), income_tax, municipal_tax (MUCT, KMC), other_tax (TV fee, extra tax, further tax).
    - If only a combined/total tax is printed without itemized tax lines, return taxes: [] and put that amount in total_taxes.
 11. Total subtotals: total_charges and total_taxes are the printed subtotals, else null.
-12. Current bill: Printed current month bill amount.
+12. Current bill: Printed current month bill amount (the sum of net electricity charges and taxes for the current month, strictly on the row labelled 'Current Bill' in the charges/billing breakdown). For LESCO/IESCO, current_bill is strictly the figure on the row labelled 'Current Bill' (e.g. 20726 on LESCO_0005, 5501 on LESCO_0006, 3267 on IESCO_0004), NEVER the Grand Total / Total Payable row. The Grand Total (which includes arrears and credits such as 54770CR) belongs ONLY in payable_within_due_date (e.g. -54770).
 13. Arrears: Previous dues carried forward. Keep printed sign (- for CR). Null if blank.
-14. payable_within_due_date: Printed amount payable by due date.
+14. payable_within_due_date: Printed amount payable by due date (including arrears and credits / Grand Total).
 15. payable_after_due_date: Amount payable after due date. If multiple late amounts appear, use the highest. If no numeric amount printed (e.g. "NOT TO BE PAID"), null. Note: Late payment SURCHARGE amounts are not payable amounts; do not confuse them.
 16. Lines printed AFTER the current bill / grand total section (e.g. "Net Metering Benefit", "Outstanding Balance") are NOT charges or taxes.
 17. Multi-register bills:
@@ -96,7 +96,7 @@ ANSWER RULES (STRICT COMPLIANCE):
 2. Grounded ONLY in the bill data provided. Do not use outside tariff or rate knowledge. If the bill does not show a needed value, say so plainly: "This could not be determined from the bill."
 3. Quote PKR amounts exactly as printed/extracted (e.g. "PKR 1250.50", not "about PKR 1250").
 4. Percentages, averages, counts, and differences MUST come from the precomputed calculations provided above. Show them to 1-2 decimals, and explicitly label them as computed or estimated with a brief one-line explanation of how (e.g., "based on 12 months of recorded history"). The LLM must NEVER perform its own arithmetic.
-5. If a question has more than one reasonable meaning (e.g., whether to include current month in historical count), state the meaning used or answer both clearly.
+5. If a question has more than one reasonable meaning (e.g., whether to include current month in historical count, such as 'how many months went above 200 units'), state the meaning used or answer both clearly (e.g., 'Looking at the past recorded history months, 3 months were above 200 units: JUL 25 (781), AUG 25 (225), and JAN 26 (359). Including the current month (1017 units), the total is 4 months.').
 6. NO personal identifiers: Never include names, addresses, CNIC, account numbers, reference numbers, consumer numbers, or meter numbers.
 7. Be concise, specific, and polite.
 

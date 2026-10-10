@@ -105,6 +105,58 @@ def process_bill(
         level1_bill = Level1Bill.fallback()
         tracker.add_fallback(bill_id, "Level1", "Using null fallback object")
 
+    # Step 2b: Deterministic sanity guard on current_bill
+    if level1_bill is not None and prep_img is not None:
+        cb = level1_bill.current_bill
+        tc = level1_bill.total_charges
+        tt = level1_bill.total_taxes
+        pwd = level1_bill.payable_within_due_date
+
+        subsidies_sum = sum(
+            c.amount for c in level1_bill.charges if c.type == "subsidy" and c.amount < 0
+        )
+        net_charges = (tc + subsidies_sum) if (tc is not None) else None
+        expected_cb = (net_charges + tt) if (net_charges is not None and tt is not None) else None
+
+        if (
+            cb is not None
+            and expected_cb is not None
+            and abs(cb - expected_cb) > 5.0
+            and pwd is not None
+            and abs(cb - abs(pwd)) <= 1.0
+        ):
+            tracker.add_warning(
+                f"{bill_id}: Current bill sanity check triggered: current_bill ({cb}) matches payable_within_due_date magnitude rather than net charges + taxes ({expected_cb:.2f}). Re-extracting current_bill field..."
+            )
+            try:
+                reextract_prompt = (
+                    "Look specifically at the charges/billing section of this bill. "
+                    "Find the row explicitly labeled 'Current Bill' (the sum of net electricity charges and taxes for the current month, before arrears or credits). "
+                    "Extract ONLY the exact printed number on that 'Current Bill' row (for example, on LESCO bills it is printed on the row 'Current Bill' before Grand Total). "
+                    "Return JSON matching: {\"current_bill\": <number>}"
+                )
+                from pydantic import BaseModel, Field
+
+                class CurrentBillReextraction(BaseModel):
+                    current_bill: Optional[float] = Field(None, description="The printed Current Bill amount")
+
+                re_resp = client.generate_structured(
+                    prompt=reextract_prompt,
+                    image=prep_img,
+                    image_bytes=raw_bytes,
+                    response_schema=CurrentBillReextraction,
+                    force_no_cache=force_no_cache,
+                )
+                re_data = json.loads(re_resp)
+                re_cb = re_data.get("current_bill")
+                if re_cb is not None:
+                    logger.info("%s: Re-extracted current_bill = %s (original was %s)", bill_id, re_cb, cb)
+                    bill_dict = level1_bill.model_dump()
+                    bill_dict["current_bill"] = re_cb
+                    level1_bill, _ = postprocess_level1(bill_dict, raw_filename=bill_id)
+            except Exception as rex:
+                logger.warning("%s: current_bill re-extraction failed: %s", bill_id, rex)
+
     # Step 3: History Extraction
     history_rows: List[HistoryRow] = []
     if prep_img is not None:

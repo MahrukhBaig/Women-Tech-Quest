@@ -10,7 +10,7 @@ load_dotenv()
 
 ALLOWED_MODELS = {"gemini-3.5-flash-lite", "gemini-3.1-flash-lite"}
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
-PROMPT_VERSION = "1.1.0"
+PROMPT_VERSION = "1.2.0"
 
 
 class Settings:
