@@ -42,3 +42,40 @@ def test_pii_sanitization():
     clean = sanitize_no_pii(text_with_cnic)
     assert "42101-1234567-1" not in clean
     assert "[REDACTED]" in clean
+
+
+def test_rule_e_deterministic_guard_lesco():
+    # LESCO bill where a subtotal was mistakenly parsed as a single energy charge
+    raw_data = {
+        "provider": "LESCO",
+        "charges": [{"type": "energy", "amount": 3777.49}],
+        "total_charges": 3777.49,
+    }
+    bill, warnings = postprocess_level1(raw_data)
+    assert bill.charges == []
+    assert bill.total_charges == 3777.49
+    assert any("Rule E guard applied" in w for w in warnings)
+
+
+def test_rule_e_does_not_affect_ke_or_multi_charges():
+    # KE bill with single charge matching total_charges is preserved
+    ke_data = {
+        "provider": "KE",
+        "charges": [{"type": "energy", "amount": 1054.0}],
+        "total_charges": 1054.0,
+    }
+    bill_ke, _ = postprocess_level1(ke_data)
+    assert len(bill_ke.charges) == 1
+
+    # IESCO bill with subsidy and FPA is preserved
+    iesco_data = {
+        "provider": "IESCO",
+        "charges": [
+            {"type": "subsidy", "amount": -3332.0},
+            {"type": "fpa", "amount": 267.0},
+        ],
+        "total_charges": 6102.0,
+    }
+    bill_iesco, _ = postprocess_level1(iesco_data)
+    assert len(bill_iesco.charges) == 2
+

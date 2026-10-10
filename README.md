@@ -8,9 +8,9 @@ An AI-powered assistant designed for the **Women Tech Quest (WTQ) Build Track Co
 
 ## 1. System Requirements & Runtime
 
-- **Python Version**: Python 3.11+ (Tested and verified on Python 3.14)
-- **Dependencies**: Pinned exactly in `requirements.txt` (`package==x.y.z`)
-- **Allowed LLM**: Google `gemini-3.5-flash-lite` (via official `google-genai` SDK)
+- **Python Version**: Python 3.11+ (Active execution environment: Python 3.14)
+- **Dependencies**: Pinned exactly in `requirements.txt` (`package==x.y.z`) from `pip freeze`
+- **Allowed LLM**: Google `gemini-3.5-flash-lite` (via official `google-genai` SDK v2.29.0)
 
 ---
 
@@ -40,7 +40,7 @@ An AI-powered assistant designed for the **Women Tech Quest (WTQ) Build Track Co
    ```bash
    cp .env.example .env
    ```
-   Add your Google Gemini API key:
+   Configure your Google Gemini API key:
    ```env
    MODEL_PROVIDER=google
    MODEL_NAME=gemini-3.5-flash-lite
@@ -52,7 +52,7 @@ An AI-powered assistant designed for the **Women Tech Quest (WTQ) Build Track Co
 
 ## 3. Running the Solution
 
-### A. CLI Pipeline (Primary Workflow)
+### A. CLI Pipeline (Scored Competition Workflow)
 
 To process a folder of bills and generate both required output CSV files:
 
@@ -70,7 +70,7 @@ python -m billdecoder.cli --bills-dir test/bills --level1-template test/csv/leve
 - `--level1-template`: Path to `level1.csv` template.
 - `--level2-template`: Path to `level2.csv` template.
 - `--output-dir`: Destination folder for output CSVs (default: `./output`).
-- `--no-cache`: Force bypass of disk cache (by default, responses are cached on disk to protect API quotas).
+- `--no-cache`: Force bypass of disk cache (by default, responses are cached on disk to protect daily API quotas).
 
 ### B. FastAPI Backend & Interactive UI
 
@@ -118,11 +118,11 @@ The system is organized around a unified core package (`billdecoder/`) shared by
   - Level 2 prompts incorporate precomputed statistics so the LLM never does arithmetic.
 
 - **`billdecoder/calculator.py`**:
-  - Deterministic Python calculator. Computes exact tax share percentage, monthly averages, max/min consumption, count and names of months exceeding 200 units, and difference vs average.
+  - Deterministic Python calculator. Precomputes exact tax share percentage, monthly averages, max/min consumption, count and names of months exceeding 200 units, and difference vs average.
 
 - **`billdecoder/postprocessing.py`**:
   - Normalizes numbers, dates (`YYYY-MM-DD`, `YYYY-MM`), and subsidies (enforces negative sign).
-  - Executes multi-register rules (Rule A).
+  - Executes multi-register rules (Rule A) and totals-only charge guards (Rule E).
   - Runs reconciliation audits (sum of charges vs total_charges; total_charges + total_taxes vs current_bill) and emits structured warnings without modifying printed values.
   - PII sanitization ensuring zero CNIC patterns or consumer identifiers leak.
 
@@ -135,9 +135,9 @@ The system is organized around a unified core package (`billdecoder/`) shared by
 
 ---
 
-## 5. Design Decisions (Rules A–D)
+## 5. Design Decisions (Rules A–E)
 
-*(Note: These decided rules resolve ambiguous edge cases and are documented per competition specification; they were validated against the official golden bill `KESC_0008`)*:
+*Note: Rules A–E are established design decisions for ambiguous layouts and edge cases. Except for the golden reference bill `KESC_0008` (which passed exact ground-truth verification), rules A–E remain unverified against official ground truth.*
 
 - **Rule A (Multi-Register Bills)**:
   1. `units_consumed` is set to the printed billed-units figure (e.g. KE "Current Month ... units"). If none, the units of the first printed register row are used.
@@ -157,12 +157,17 @@ The system is organized around a unified core package (`billdecoder/`) shared by
 - **Rule D (Level 1 Numbers Use Printed Values)**:
   - Numbers are extracted strictly as printed; missing values are set to `null` rather than inferred or estimated.
 
+- **Rule E (Totals-Only Charges on Non-KE Bills)**:
+  - If the charges section prints only totals (e.g. "Total Electricity Charges" or "Net Electricity Charges") and no itemised line items (common on LESCO bills such as `LESCO_0005` and `LESCO_0006`), `charges = []` and `total_charges` is set to the printed total.
+  - A deterministic post-processing guard ensures that if a non-KE bill has exactly one extracted charge line that matches `total_charges` without being a subsidy, it is identified as an unitemized subtotal and reset to `charges = []`.
+
 ---
 
 ## 6. Known Limitations
 
 - **Severely Blurry or Occluded Images**: If a section of the bill is heavily crumpled or obscured by grey boxes, the pipeline sets unavailable fields to `null` instead of guessing, as mandated by the scoring guide.
 - **Truncated Historical Tables**: If a consumption history table is cut off at the edge of the bill image, only the visible months are extracted; unprinted months are never fabricated.
+- **Python Environment Compatibility**: The development and test suite were run on Python 3.14.8. All code adheres strictly to standard Python 3.11+ features and syntax, though isolated local verification specifically on Python 3.11/3.12 binaries was not conducted due to single-environment availability.
 
 ---
 
@@ -171,10 +176,10 @@ The system is organized around a unified core package (`billdecoder/`) shared by
 In compliance with Section 3 and Section 7.4 of the Participant Guide:
 
 - **Model Used**: `gemini-3.5-flash-lite`
-- **SDK**: `google-genai` (version 2.29.0)
-- **External Invoice / Receipt Extraction APIs**: None (no Azure Prebuilt Invoice, no AWS Textract, no Mindee).
-- **AI Coding Tools Used**: Antigravity IDE (Google DeepMind) was used as the pair-programming assistant to author code and tests.
-- **Other AI Chatbots / Services**: None.
+- **SDK**: `google-genai` (exact installed version: `2.29.0`)
+- **Invoice-Extraction Services**: None (prohibited services like Azure Prebuilt Invoice, AWS Textract AnalyzeExpense, and Mindee were not used).
+- **AI Coding Tools**: Antigravity IDE (Google DeepMind) was used as the pair-programming assistant to author code and tests.
+- **Other AI Chatbots**: Claude (Anthropic) was used by the team outside the codebase for planning, writing the build prompt, and reviewing extraction outputs; it is not called by the solution at runtime.
 
 ---
 

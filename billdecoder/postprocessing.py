@@ -128,7 +128,19 @@ def postprocess_level1(bill_data: Dict[str, Any], raw_filename: str = "") -> Tup
                     amt = -amt
                 processed_charges.append(ChargeItem(type=ctype, amount=amt))  # type: ignore
 
+    # Rule E deterministic guard for non-KE providers:
+    # If charges has exactly one entry, with no subsidy type, whose amount equals total_charges,
+    # then this was a subtotal mistakenly parsed as a charge line -> set charges = [] and log warning.
+    if provider != "KE" and len(processed_charges) == 1 and total_charges is not None:
+        single_c = processed_charges[0]
+        if single_c.type != "subsidy" and abs(single_c.amount - total_charges) <= 1.0:
+            warnings.append(
+                f"Rule E guard applied: Non-KE provider '{provider}' had a single '{single_c.type}' charge matching total_charges ({total_charges}). Resetting charges to []."
+            )
+            processed_charges = []
+
     # 5. Taxes processing
+
     taxes_raw = bill_data.get("taxes") or []
     processed_taxes: List[TaxItem] = []
     valid_tax_types = {

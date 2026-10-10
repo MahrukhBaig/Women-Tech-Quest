@@ -38,9 +38,11 @@ CRITICAL EXTRACTION RULES:
     - charges = printed subsidy as negative "subsidy" entry, plus any printed FPA as "fpa".
     - total_charges = printed "Total Electricity Charges" figure (gross, before subsidy).
     - Combined tax goes into total_taxes with taxes: [].
+19. Rule E (Totals-only charges): If the charges section prints only totals (Total / Net Electricity Charges) and no itemised lines (common on LESCO/IESCO), then charges = [] and total_charges = the printed total. Never create an artificial charge line from a subtotal figure. Only separately printed lines such as subsidy or FPA lines become charge entries.
 
 Extract and return strictly the JSON object matching the requested schema.
 """
+
 
 
 HISTORY_SYSTEM_PROMPT = f"""You are an assistant extracting the monthly consumption and billing history table from a Pakistani utility bill. Prompt Version: {PROMPT_VERSION}.

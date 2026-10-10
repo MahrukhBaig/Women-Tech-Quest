@@ -8,3 +8,7 @@ bill_cache/
 *.zip
 scratch*
 node_modules/
+test/bills/
+*.mp4
+*.mov
+*.webm

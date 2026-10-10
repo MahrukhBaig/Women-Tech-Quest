@@ -1,192 +1,357 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="dark">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>WTQ Utility Bill Decoder | AI Assistant</title>
-  <meta name="description" content="AI-powered assistant for extracting and explaining Pakistani electricity bills (K-Electric, LESCO, IESCO).">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <title>Utility Bill Decoder | WTQ Build Track</title>
+  <meta name="description" content="AI assistant that extracts and explains Pakistani electricity bills with deterministic calculations.">
   <link rel="stylesheet" href="/static/styles.css">
 </head>
 <body>
-  <div class="app-container">
+  <div class="app-layout">
     <!-- Header -->
-    <header class="header">
-      <div class="logo-group">
-        <div class="logo-icon">⚡</div>
+    <header class="app-header">
+      <div class="header-left">
+        <div class="logo-mark" aria-hidden="true">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
+        </div>
         <div>
-          <h1 class="logo-title">Utility Bill Decoder</h1>
-          <p class="logo-subtitle">WTQ Build Track • Competition Entry</p>
+          <h1 class="app-title">Utility Bill Decoder</h1>
+          <p class="privacy-note">Bills are processed in memory and are not stored.</p>
         </div>
       </div>
-      <div class="status-badge" id="system-status-badge">
-        <span class="status-dot"></span>
-        <span id="model-name-label">gemini-3.5-flash-lite</span>
+      <div class="header-right">
+        <div class="model-badge">
+          <span class="pulse-dot" aria-hidden="true"></span>
+          <span>gemini-3.5-flash-lite</span>
+        </div>
+        <button id="theme-toggle" class="btn-icon" aria-label="Toggle light or dark theme" title="Toggle theme">
+          <svg id="theme-icon-sun" class="icon-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"></circle>
+            <line x1="12" y1="1" x2="12" y2="3"></line>
+            <line x1="12" y1="21" x2="12" y2="23"></line>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+            <line x1="1" y1="12" x2="3" y2="12"></line>
+            <line x1="21" y1="12" x2="23" y2="12"></line>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+          </svg>
+          <svg id="theme-icon-moon" class="icon-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:none;">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path>
+          </svg>
+        </button>
       </div>
     </header>
 
-    <!-- Main Grid -->
-    <main class="main-grid">
-      <!-- Left Column: Upload & Image Preview -->
-      <section class="panel upload-panel">
-        <div class="panel-header">
-          <h2>1. Upload Utility Bill</h2>
-          <span class="pill">PNG / JPG • Max 15MB</span>
-        </div>
-
-        <div class="dropzone" id="dropzone" tabindex="0" role="button" aria-label="Upload utility bill image">
-          <input type="file" id="file-input" accept="image/png, image/jpeg" style="display: none;">
-          <div class="dropzone-content" id="dropzone-prompt">
-            <div class="upload-icon">📄</div>
-            <p class="dropzone-main-text">Drag & drop your electricity bill here</p>
-            <p class="dropzone-sub-text">or click to browse files from your computer</p>
-            <span class="upload-btn">Select Bill Image</span>
+    <!-- Main Content Area -->
+    <main class="main-content">
+      <!-- Left Column: Upload & Actions -->
+      <aside class="sidebar-panel">
+        <div class="card upload-card">
+          <div class="card-title-row">
+            <h2>Select Bill</h2>
+            <span class="tag-pill">JPG / PNG &bull; &le;15 MB</span>
           </div>
-          <div class="preview-container" id="preview-container" style="display: none;">
-            <img id="bill-preview-img" src="" alt="Bill preview">
-            <button class="btn-change-image" id="btn-change-image" title="Change Image">✕ Replace Image</button>
-          </div>
-        </div>
 
-        <!-- Sample Bill Quick Loader -->
-        <div class="sample-bills-bar">
-          <span class="sample-label">Try sample bills:</span>
-          <div class="sample-chips">
-            <button class="chip" data-sample="KESC_0008.png">KESC_0008 (Golden)</button>
-            <button class="chip" data-sample="IESCO_0004.jpg">IESCO_0004</button>
-            <button class="chip" data-sample="KESC_0004.png">KESC_0004 (Net-Meter)</button>
-            <button class="chip" data-sample="LESCO_0005.png">LESCO_0005</button>
-            <button class="chip" data-sample="LESCO_0006.png">LESCO_0006</button>
-          </div>
-        </div>
-
-        <!-- Decode Action Button -->
-        <button class="btn-primary" id="btn-decode" disabled>
-          <span id="btn-decode-text">⚡ Decode Utility Bill</span>
-          <span class="spinner" id="decode-spinner" style="display: none;"></span>
-        </button>
-
-        <div class="status-msg" id="status-msg" style="display: none;"></div>
-      </section>
-
-      <!-- Right Column: Results & Q&A -->
-      <section class="panel results-panel">
-        <div class="panel-header">
-          <h2>2. Bill Intelligence & Answers</h2>
-          <div class="tabs">
-            <button class="tab-btn active" id="tab-overview" data-target="view-overview">Overview</button>
-            <button class="tab-btn" id="tab-qa" data-target="view-qa">Customer Q&A</button>
-            <button class="tab-btn" id="tab-raw" data-target="view-raw">Raw JSON</button>
-          </div>
-        </div>
-
-        <!-- Empty Placeholder -->
-        <div class="empty-state" id="empty-state">
-          <div class="empty-icon">📊</div>
-          <h3>No bill decoded yet</h3>
-          <p>Upload a bill image on the left or select a training sample to view extracted Level 1 details and Level 2 customer explanations.</p>
-        </div>
-
-        <!-- Content Views -->
-        <div class="results-content" id="results-content" style="display: none;">
-          <!-- View 1: Overview Cards & Tables -->
-          <div class="tab-view active" id="view-overview">
-            <div class="metrics-grid">
-              <div class="metric-card highlight">
-                <span class="metric-label">Provider</span>
-                <span class="metric-val" id="val-provider">-</span>
-                <span class="metric-sub" id="val-tariff">-</span>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">Billing Month</span>
-                <span class="metric-val" id="val-month">-</span>
-                <span class="metric-sub" id="val-issue-date">Issue: -</span>
-              </div>
-              <div class="metric-card">
-                <span class="metric-label">Units Consumed</span>
-                <span class="metric-val" id="val-units">-</span>
-                <span class="metric-sub" id="val-readings">Readings: -</span>
-              </div>
-              <div class="metric-card highlight-green">
-                <span class="metric-label">Payable Amount</span>
-                <span class="metric-val" id="val-payable">-</span>
-                <span class="metric-sub" id="val-due-date">Due: -</span>
-              </div>
+          <!-- Dropzone -->
+          <div id="dropzone" class="dropzone" tabindex="0" role="button" aria-label="Drop utility bill image or press to browse">
+            <input type="file" id="file-input" accept="image/png, image/jpeg" style="display: none;">
+            
+            <div id="dropzone-empty" class="dropzone-empty">
+              <svg class="dropzone-icon" width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                <polyline points="14 2 14 8 20 8"></polyline>
+                <line x1="12" y1="18" x2="12" y2="12"></line>
+                <line x1="9" y1="15" x2="15" y2="15"></line>
+              </svg>
+              <p class="dropzone-title">Drag & drop electricity bill</p>
+              <p class="dropzone-subtitle">or click to browse from device</p>
+              <span class="btn-browse">Browse file</span>
             </div>
 
-            <!-- Tax Share Banner -->
-            <div class="stats-banner" id="stats-banner">
-              <div class="stats-banner-icon">💡</div>
-              <div class="stats-banner-text">
-                <strong id="stat-tax-headline">Tax Share: -</strong>
-                <p id="stat-tax-detail">Deterministic precomputation verified by Python calculator.</p>
+            <div id="preview-box" class="preview-box" style="display: none;">
+              <img id="bill-preview-img" class="bill-preview-img" src="" alt="Selected bill preview">
+              <div class="preview-overlay">
+                <span id="preview-file-label" class="file-label">Bill Image</span>
+                <button id="btn-change-file" class="btn-small-danger" type="button">Change</button>
               </div>
             </div>
+          </div>
 
-            <!-- Breakdown Tables -->
-            <div class="tables-split">
-              <div class="table-card">
-                <div class="table-card-header">
-                  <h3>Itemized Charges</h3>
-                  <span class="badge" id="badge-total-charges">Total: PKR 0</span>
+          <!-- Sample Quick Loaders -->
+          <div class="sample-section">
+            <span class="sample-title">Quick test samples:</span>
+            <div class="chip-container">
+              <button class="chip" data-sample="KESC_0008.png" type="button">KESC_0008 (Golden)</button>
+              <button class="chip" data-sample="IESCO_0004.jpg" type="button">IESCO_0004 (Subsidy)</button>
+              <button class="chip" data-sample="KESC_0004.png" type="button">KESC_0004 (Net-Meter)</button>
+              <button class="chip" data-sample="LESCO_0005.png" type="button">LESCO_0005 (Totals)</button>
+              <button class="chip" data-sample="LESCO_0006.png" type="button">LESCO_0006 (Commercial)</button>
+            </div>
+          </div>
+
+          <!-- Primary Decode Button -->
+          <button id="btn-decode" class="btn-primary" disabled type="button">
+            <span id="btn-decode-text">Decode Bill</span>
+          </button>
+
+          <!-- 3-Step Progress Indicator -->
+          <div id="progress-container" class="progress-container" style="display: none;" aria-live="polite">
+            <div class="steps-row">
+              <div class="step-item" id="step-1">
+                <div class="step-circle">1</div>
+                <span>Reading</span>
+              </div>
+              <div class="step-line" id="line-1"></div>
+              <div class="step-item" id="step-2">
+                <div class="step-circle">2</div>
+                <span>Extracting</span>
+              </div>
+              <div class="step-line" id="line-2"></div>
+              <div class="step-item" id="step-3">
+                <div class="step-circle">3</div>
+                <span>Answers</span>
+              </div>
+            </div>
+            <div class="progress-actions">
+              <span id="progress-detail-text" class="progress-detail-text">Processing with Gemini 3.5 Flash-Lite...</span>
+              <button id="btn-cancel" class="btn-text-danger" type="button">Cancel</button>
+            </div>
+          </div>
+
+          <!-- Error Alert Banner -->
+          <div id="alert-banner" class="alert-banner" style="display: none;" role="alert">
+            <div class="alert-content">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <line x1="12" y1="8" x2="12" y2="12"></line>
+                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+              </svg>
+              <span id="alert-message">An error occurred.</span>
+            </div>
+            <button id="btn-retry" class="btn-small" type="button">Retry</button>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Right Column: Results & Intelligence -->
+      <section class="results-panel">
+        <!-- Navigation Tabs -->
+        <nav class="nav-tabs" role="tablist">
+          <button id="tab-overview" class="tab-item active" role="tab" aria-selected="true" data-target="view-overview" type="button">
+            Bill Summary & Breakdown
+          </button>
+          <button id="tab-qa" class="tab-item" role="tab" aria-selected="false" data-target="view-qa" type="button">
+            Ask Questions (Level 2)
+          </button>
+          <button id="tab-raw" class="tab-item" role="tab" aria-selected="false" data-target="view-raw" type="button">
+            Level 1 JSON & Diagnostics
+          </button>
+          <button id="tab-batch" class="tab-item" role="tab" aria-selected="false" data-target="view-batch" type="button">
+            Batch Mode
+          </button>
+        </nav>
+
+        <!-- Empty State Container -->
+        <div id="empty-state" class="empty-state">
+          <svg class="empty-icon" width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2">
+            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="3" y1="9" x2="21" y2="9"></line>
+            <line x1="9" y1="21" x2="9" y2="9"></line>
+          </svg>
+          <h2>No bill decoded yet</h2>
+          <p>Select a bill image or test sample to view verified Level 1 extraction, precomputed stats, and customer explanations.</p>
+        </div>
+
+        <!-- Populated Results Container -->
+        <div id="results-wrapper" class="results-wrapper" style="display: none;">
+          
+          <!-- View 1: Summary & Breakdown -->
+          <div id="view-overview" class="tab-view active">
+            
+            <!-- Hero Metric Card -->
+            <div class="card hero-card">
+              <div class="hero-top">
+                <div class="provider-info">
+                  <span id="hero-provider-badge" class="badge-provider">KE</span>
+                  <div>
+                    <span id="hero-tariff-label" class="tariff-text">Tariff: A1-R</span>
+                    <span id="hero-month-label" class="month-text">Month: 2026-04</span>
+                  </div>
                 </div>
-                <div class="table-scroll">
-                  <table class="data-table" id="table-charges">
+                <div class="due-status">
+                  <span id="hero-due-badge" class="due-badge">Due Date: 2026-04-21</span>
+                  <span id="hero-days-left" class="days-chip">Upcoming</span>
+                </div>
+              </div>
+
+              <div class="hero-amounts">
+                <div class="amount-main">
+                  <span class="amount-title">Payable by Due Date</span>
+                  <div class="amount-val-group">
+                    <span class="currency-tag">PKR</span>
+                    <span id="hero-payable-val" class="amount-huge">3,430</span>
+                  </div>
+                </div>
+                <div class="amount-late">
+                  <span class="amount-title">Payable After Due Date</span>
+                  <div class="amount-val-group">
+                    <span class="currency-tag">PKR</span>
+                    <span id="hero-late-val" class="amount-medium">3,716</span>
+                  </div>
+                </div>
+                <div class="metric-block">
+                  <span class="amount-title">Units Billed</span>
+                  <span id="hero-units-val" class="metric-num">151 kWh</span>
+                  <span id="hero-readings-val" class="metric-sub">Readings: 8819 &rarr; 8970</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Precomputed Tax & Energy Proportion Card -->
+            <div class="card chart-card">
+              <div class="card-title-row">
+                <h3>Energy Charges vs. Taxes Breakdown</h3>
+                <span id="tax-share-pill" class="pill-stat">Taxes: 16.61%</span>
+              </div>
+              <div id="proportion-chart-container" class="proportion-chart-container">
+                <!-- Inline SVG Stacked Bar Chart -->
+                <div id="proportion-svg-wrapper"></div>
+              </div>
+              <p id="stat-explanation-text" class="stat-explanation">
+                Computed deterministically using verified Python calculator.
+              </p>
+            </div>
+
+            <!-- Itemized Tables (Charges & Taxes) -->
+            <div class="tables-grid">
+              <!-- Itemized Charges -->
+              <div class="card table-card">
+                <div class="card-title-row">
+                  <h3>Electricity Charges</h3>
+                  <span id="charges-subtotal-badge" class="badge-subtotal">Total: PKR 0</span>
+                </div>
+                <div class="table-wrap">
+                  <table class="clean-table" aria-label="Itemized charges table">
                     <thead>
-                      <tr><th>Type</th><th class="text-right">Amount (PKR)</th></tr>
+                      <tr><th>Line Item</th><th class="col-num">Amount (PKR)</th></tr>
                     </thead>
-                    <tbody id="tbody-charges"><tr><td colspan="2" class="text-muted">No charge rows</td></tr></tbody>
+                    <tbody id="tbody-charges">
+                      <tr><td colspan="2" class="text-muted">No charge rows</td></tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
 
-              <div class="table-card">
-                <div class="table-card-header">
-                  <h3>Taxes & Duties</h3>
-                  <span class="badge" id="badge-total-taxes">Total: PKR 0</span>
+              <!-- Itemized Taxes -->
+              <div class="card table-card">
+                <div class="card-title-row">
+                  <h3>Taxes & Government Duties</h3>
+                  <span id="taxes-subtotal-badge" class="badge-subtotal">Total: PKR 0</span>
                 </div>
-                <div class="table-scroll">
-                  <table class="data-table" id="table-taxes">
+                <div class="table-wrap">
+                  <table class="clean-table" aria-label="Itemized taxes table">
                     <thead>
-                      <tr><th>Type</th><th class="text-right">Amount (PKR)</th></tr>
+                      <tr><th>Tax Line</th><th class="col-num">Amount (PKR)</th></tr>
                     </thead>
-                    <tbody id="tbody-taxes"><tr><td colspan="2" class="text-muted">No tax rows</td></tr></tbody>
+                    <tbody id="tbody-taxes">
+                      <tr><td colspan="2" class="text-muted">No tax rows</td></tr>
+                    </tbody>
                   </table>
                 </div>
               </div>
             </div>
 
-            <!-- Reconciliation & Notes -->
-            <div class="notes-card" id="notes-card" style="display: none;">
-              <h4>Reconciliation Notices</h4>
-              <ul id="warnings-list"></ul>
+            <!-- Historical Consumption Chart -->
+            <div id="history-section" class="card history-card" style="display: none;">
+              <div class="card-title-row">
+                <h3>12-Month Usage History</h3>
+                <span id="history-months-badge" class="badge-subtotal">12 recorded months</span>
+              </div>
+              <div id="history-svg-wrapper" class="history-svg-wrapper">
+                <!-- Inline SVG Bar Chart -->
+              </div>
             </div>
+
+            <!-- Reconciliation Notices (Collapsible) -->
+            <details id="warnings-details" class="card warning-card" style="display: none;">
+              <summary class="warning-summary">
+                <span>System Reconciliation Notices (<span id="warnings-count">0</span>)</span>
+              </summary>
+              <ul id="warnings-list" class="warning-list"></ul>
+            </details>
           </div>
 
           <!-- View 2: Customer Q&A -->
-          <div class="tab-view" id="view-qa">
-            <div class="qa-container" id="qa-container">
-              <!-- Dynamically populated Q&A items -->
+          <div id="view-qa" class="tab-view">
+            <div class="card qa-wrapper-card">
+              <div class="card-title-row">
+                <h3>Customer Explanations (Level 2)</h3>
+                <span class="tag-pill">Grounded in Bill &bull; Plain English</span>
+              </div>
+              
+              <!-- Quick Question Suggestion Chips -->
+              <div class="qa-chips-row">
+                <span class="qa-chips-label">Common customer questions:</span>
+                <div class="chip-container">
+                  <button class="chip-q" data-q="How much of my bill is taxes?" type="button">How much is taxes?</button>
+                  <button class="chip-q" data-q="How many months in my history went above 200 units?" type="button">Months above 200 units?</button>
+                  <button class="chip-q" data-q="What is the single largest charge on my bill?" type="button">Single largest charge?</button>
+                  <button class="chip-q" data-q="When is the due date for this bill and how much should I pay?" type="button">Due date & payable?</button>
+                </div>
+              </div>
+
+              <!-- Chat/Bubble Stream -->
+              <div id="qa-chat-stream" class="qa-chat-stream">
+                <!-- Dynamically populated Q&A bubbles -->
+              </div>
             </div>
           </div>
 
-          <!-- View 3: Raw JSON -->
-          <div class="tab-view" id="view-raw">
-            <div class="json-actions">
-              <span>Compact single-line JSON compliant with Level 1 schema</span>
-              <button class="btn-copy" id="btn-copy-json">📋 Copy JSON</button>
+          <!-- View 3: Raw Level 1 JSON -->
+          <div id="view-raw" class="tab-view">
+            <div class="card json-card">
+              <div class="card-title-row">
+                <h3>Level 1 Structured JSON Output</h3>
+                <div class="btn-group">
+                  <button id="btn-copy-raw-json" class="btn-small" type="button">Copy JSON</button>
+                  <button id="btn-download-json" class="btn-small" type="button">Download .json</button>
+                </div>
+              </div>
+              <pre class="code-pre"><code id="code-raw-json"></code></pre>
             </div>
-            <pre class="json-pre"><code id="raw-json-code"></code></pre>
           </div>
+
+          <!-- View 4: Batch Processing -->
+          <div id="view-batch" class="tab-view">
+            <div class="card batch-card">
+              <div class="card-title-row">
+                <h3>Batch Folder Processing (Scored CLI)</h3>
+                <span class="tag-pill">CLI Automation</span>
+              </div>
+              <p class="batch-intro">
+                For competition evaluation, the scored <code>level1.csv</code> and <code>level2.csv</code> are generated via the deterministic CLI engine.
+              </p>
+              <div class="code-box">
+                <code>python -m billdecoder.cli --bills-dir test/bills --level1-template test/csv/level1.csv --level2-template test/csv/level2.csv --output-dir output</code>
+              </div>
+              <p class="batch-note">
+                Output files are created at <code>output/level1.csv</code> and <code>output/level2.csv</code> strictly preserving template IDs and ordering.
+              </p>
+            </div>
+          </div>
+
         </div>
       </section>
     </main>
 
     <!-- Footer -->
-    <footer class="footer">
-      <p>Built for Women Tech Quest (WTQ) Build Track • Utility Bill Decoder • Model: <strong>gemini-3.5-flash-lite</strong></p>
+    <footer class="app-footer">
+      <span>WTQ Build Track &bull; Model: <strong>gemini-3.5-flash-lite</strong></span>
+      <span>Strict Compliance Mode Active &bull; Zero Hand-Editing</span>
     </footer>
   </div>
 
