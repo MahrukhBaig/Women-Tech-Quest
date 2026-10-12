@@ -711,20 +711,30 @@ document.addEventListener("DOMContentLoaded", () => {
     // 7. Q&A View (Chat bubbles with full question text)
     const qaStream = document.getElementById("qa-chat-stream");
     qaStream.textContent = "";
-    const entries = Object.entries(answers);
-    if (entries.length === 0) {
+    const qaItems = (data.qa_list && data.qa_list.length > 0) ?
+      data.qa_list :
+      Object.entries(answers).map(([qid, ansText]) => ({
+        question_id: qid,
+        question: STANDARD_QUESTIONS[qid] || qid,
+        answer: ansText,
+      }));
+
+    if (qaItems.length === 0) {
       const p = document.createElement("p");
       p.className = "text-muted";
       p.textContent = "No Level 2 answers generated.";
       qaStream.appendChild(p);
     } else {
-      entries.forEach(([qid, ansText]) => {
+      qaItems.forEach(item => {
+        const qText = item.question;
+        const ansText = item.answer;
+
         const group = document.createElement("div");
         group.className = "qa-bubble-group";
 
         const qBubble = document.createElement("div");
         qBubble.className = "qa-question-bubble";
-        qBubble.textContent = STANDARD_QUESTIONS[qid] || qid;
+        qBubble.textContent = qText;
 
         const aBubble = document.createElement("div");
         aBubble.className = "qa-answer-bubble";
@@ -807,31 +817,14 @@ document.addEventListener("DOMContentLoaded", () => {
       aBubble.className = "qa-answer-bubble";
 
       const pAns = document.createElement("p");
-      // Grounded answer from stats and level1
-      const l1 = lastDecodedPayload.level1 || {};
-      const stats = lastDecodedPayload.stats || {};
-      const lower = q.toLowerCase();
-
-      let ans = "";
-      if (lower.includes("tax")) {
-        ans = stats.tax_share_text ? "Based on precomputed stats: " + stats.tax_share_text : "This could not be determined from the bill.";
-      } else if (lower.includes("due") || lower.includes("pay")) {
-        const amt = l1.payable_within_due_date != null ? "PKR " + Number(l1.payable_within_due_date).toLocaleString() : "Not on bill";
-        ans = "The due date is " + (l1.due_date || "not stated") + " with amount payable within due date: " + amt + ".";
-      } else if (lower.includes("unit") || lower.includes("kwh") || lower.includes("consumption")) {
-        ans = "Current billed consumption is " + (l1.units_consumed != null ? l1.units_consumed + " units (kWh)" : "not on bill") + ".";
-      } else {
-        ans = "Based on extracted bill details: Provider is " + (l1.provider || "Unknown") + ", Month is " + (l1.bill_month || "Unknown") + ", and Current Bill is PKR " + (l1.current_bill != null ? Number(l1.current_bill).toLocaleString() : "Not on bill") + ".";
-      }
-
-      pAns.textContent = ans;
+      pAns.textContent = "Thinking...";
       aBubble.appendChild(pAns);
 
       const footRow = document.createElement("div");
       footRow.className = "qa-footer-row";
       const calcBadge = document.createElement("span");
       calcBadge.className = "badge-calculated";
-      calcBadge.textContent = "✓ Calculated";
+      calcBadge.textContent = "AI Grounded";
       footRow.appendChild(calcBadge);
 
       aBubble.appendChild(footRow);
@@ -840,6 +833,32 @@ document.addEventListener("DOMContentLoaded", () => {
       qaStream.prepend(group);
 
       inputCustomQ.value = "";
+      btnAskCustom.disabled = true;
+
+      const l1 = lastDecodedPayload.level1 || {};
+      const stats = lastDecodedPayload.stats || {};
+
+      fetch("/api/ask", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          bill_id: lastDecodedPayload.bill_id || "bill",
+          question: q,
+          level1: l1,
+          stats: stats,
+          history: lastDecodedPayload.history || [],
+        }),
+      })
+      .then(r => r.json())
+      .then(resData => {
+        pAns.textContent = resData.answer || "This could not be determined from the bill.";
+      })
+      .catch(err => {
+        pAns.textContent = "Could not answer question: " + err.message;
+      })
+      .finally(() => {
+        btnAskCustom.disabled = false;
+      });
     }
 
     btnAskCustom.addEventListener("click", handleCustomAsk);

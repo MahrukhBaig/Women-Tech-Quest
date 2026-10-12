@@ -17,9 +17,10 @@ from pydantic import BaseModel
 from billdecoder.config import settings
 from billdecoder.image_prep import validate_image_bytes
 from billdecoder.llm_client import GeminiClient, get_llm_client
-from billdecoder.models import Level1Bill
-from billdecoder.pipeline import PipelineTracker, process_bill
+from billdecoder.models import Level1Bill, Level2AnswersResponse
+from billdecoder.pipeline import FALLBACK_L2_ANSWER, PipelineTracker, process_bill
 from billdecoder.postprocessing import sanitize_no_pii
+from billdecoder.prompts import build_level2_prompt
 
 logger = logging.getLogger("billdecoder.api")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -93,7 +94,40 @@ class QuestionItem(BaseModel):
 class AskQuestionRequest(BaseModel):
     bill_id: str
     question: str
-    level1_data: Optional[Dict[str, Any]] = None
+    level1: Optional[Dict[str, Any]] = None
+    stats: Optional[Dict[str, Any]] = None
+    history: Optional[List[Dict[str, Any]]] = None
+
+
+@app.post("/api/ask")
+async def ask_question_endpoint(req: AskQuestionRequest):
+    """Answer an ad-hoc customer question about a decoded bill using Gemini 3.5 Flash-Lite."""
+    client = get_llm_client()
+    stats = req.stats or {}
+    l1_json = json.dumps(req.level1 or {}, indent=2)
+    hist_json = json.dumps(req.history or [], indent=2)
+    prompt = build_level2_prompt(
+        bill_id=req.bill_id,
+        questions=[{"question_id": "custom", "question": req.question}],
+        level1_json_str=l1_json,
+        history_json_str=hist_json,
+        stats=stats,
+    )
+    try:
+        resp_text = client.generate_structured(
+            prompt=prompt,
+            image=None,
+            image_bytes=b"",
+            response_schema=Level2AnswersResponse,
+            force_no_cache=True,
+        )
+        data = json.loads(resp_text)
+        parsed = Level2AnswersResponse.model_validate(data)
+        answer = parsed.answers[0].answer if parsed.answers else "This could not be determined from the bill."
+        return {"question": req.question, "answer": sanitize_no_pii(answer)}
+    except Exception as ex:
+        logger.warning("Custom question call failed: %s", ex)
+        return {"question": req.question, "answer": "This could not be determined from the bill."}
 
 
 @app.post("/api/decode")
@@ -153,10 +187,11 @@ async def decode_bill_endpoint(
     # Default questions if none provided
     if not questions_list:
         questions_list = [
-            {"question_id": "Q1", "question": "How much of my bill is taxes?"},
-            {"question_id": "Q2", "question": "How many months in my history went above 200 units?"},
-            {"question_id": "Q3", "question": "What is the single largest charge on my bill?"},
-            {"question_id": "Q4", "question": "When is the due date and what amount is payable?"},
+            {"question_id": "Q1", "question": "Is this a net-metered (solar) connection or a standard connection? How did you tell?"},
+            {"question_id": "Q2", "question": "How much of my bill is taxes?"},
+            {"question_id": "Q3", "question": "How many months in my history went above 200 units?"},
+            {"question_id": "Q4", "question": "What is the single largest charge on my bill?"},
+            {"question_id": "Q5", "question": "When is the due date for this bill and how much should I pay?"},
         ]
 
     # 4. Execute pipeline with temporary file
@@ -177,6 +212,15 @@ async def decode_bill_endpoint(
             force_no_cache=True,
         )
 
+        qa_list = [
+            {
+                "question_id": q["question_id"],
+                "question": q["question"],
+                "answer": result["answers"].get(q["question_id"], FALLBACK_L2_ANSWER),
+            }
+            for q in questions_list
+        ]
+
         return {
             "bill_id": safe_bill_id,
             "level1": result["level1_bill"].model_dump(),
@@ -184,6 +228,7 @@ async def decode_bill_endpoint(
             "stats": result["stats"],
             "history": [r.model_dump() for r in result["history"]],
             "answers": result["answers"],
+            "qa_list": qa_list,
             "warnings": tracker.warnings,
             "fallbacks": tracker.fallbacks,
         }
