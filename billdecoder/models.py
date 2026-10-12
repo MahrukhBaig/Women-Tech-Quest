@@ -1,6 +1,6 @@
 """Pydantic data models for Level 1 extraction, history, stats, and Level 2 Q&A."""
 
-from typing import List, Literal, Optional, Union
+from typing import List, Literal, Optional
 from pydantic import BaseModel, Field, field_validator
 
 
@@ -29,13 +29,13 @@ TaxType = Literal[
 class ChargeItem(BaseModel):
     """An individual line item from the charges section."""
     type: ChargeType
-    amount: Union[float, int]
+    amount: float
 
 
 class TaxItem(BaseModel):
     """An individual line item from the taxes/government section."""
     type: TaxType
-    amount: Union[float, int]
+    amount: float
 
 
 class Level1Bill(BaseModel):
@@ -48,7 +48,7 @@ class Level1Bill(BaseModel):
         default=None,
         description="Tariff code exactly as printed (e.g. A1-R, A-1a(01)). Null if unreadable.",
     )
-    sanctioned_load_kw: Optional[Union[float, int]] = Field(
+    sanctioned_load_kw: Optional[float] = Field(
         default=None,
         description="Sanctioned load in kW (e.g. 3, 5.0). Null if unreadable.",
     )
@@ -68,15 +68,15 @@ class Level1Bill(BaseModel):
         default=None,
         description="Due date for payment in YYYY-MM-DD format. Null if unreadable.",
     )
-    previous_reading: Optional[Union[float, int]] = Field(
+    previous_reading: Optional[float] = Field(
         default=None,
         description="Previous meter reading numeric value. Null if unreadable.",
     )
-    current_reading: Optional[Union[float, int]] = Field(
+    current_reading: Optional[float] = Field(
         default=None,
         description="Current meter reading numeric value. Null if unreadable.",
     )
-    units_consumed: Optional[Union[float, int]] = Field(
+    units_consumed: Optional[float] = Field(
         default=None,
         description="Units consumed/billed for the current month. Null if unreadable.",
     )
@@ -84,7 +84,7 @@ class Level1Bill(BaseModel):
         default_factory=list,
         description="List of charge items. Empty list if none/unitemized.",
     )
-    total_charges: Optional[Union[float, int]] = Field(
+    total_charges: Optional[float] = Field(
         default=None,
         description="Printed subtotal for charges, or null if not printed.",
     )
@@ -92,23 +92,23 @@ class Level1Bill(BaseModel):
         default_factory=list,
         description="List of tax items. Empty list if none/combined.",
     )
-    total_taxes: Optional[Union[float, int]] = Field(
+    total_taxes: Optional[float] = Field(
         default=None,
         description="Printed subtotal for taxes, or combined tax amount.",
     )
-    current_bill: Optional[Union[float, int]] = Field(
+    current_bill: Optional[float] = Field(
         default=None,
         description="Printed current month bill amount. Null if unreadable.",
     )
-    arrears: Optional[Union[float, int]] = Field(
+    arrears: Optional[float] = Field(
         default=None,
         description="Previous dues carried forward. Negative for credits. Null if blank.",
     )
-    payable_within_due_date: Optional[Union[float, int]] = Field(
+    payable_within_due_date: Optional[float] = Field(
         default=None,
         description="Amount payable within/by due date. Null if unreadable.",
     )
-    payable_after_due_date: Optional[Union[float, int]] = Field(
+    payable_after_due_date: Optional[float] = Field(
         default=None,
         description="Amount payable after due date (highest if multiple). Null if unreadable.",
     )
@@ -141,9 +141,9 @@ class Level1Bill(BaseModel):
 class HistoryRow(BaseModel):
     """One month row from the consumption/payment history table."""
     month: str
-    units: Optional[Union[float, int]] = None
-    bill_amount: Optional[Union[float, int]] = None
-    payment: Optional[Union[float, int]] = None
+    units: Optional[float] = None
+    bill_amount: Optional[float] = None
+    payment: Optional[float] = None
 
 
 class HistoryExtraction(BaseModel):
