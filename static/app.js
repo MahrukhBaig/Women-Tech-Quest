@@ -711,8 +711,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // 7. Q&A View (Chat bubbles with full question text)
     const qaStream = document.getElementById("qa-chat-stream");
     qaStream.textContent = "";
-    const qaItems = (data.qa_list && data.qa_list.length > 0) ?
-      data.qa_list :
+    const qaItems = (payload.qa_list && payload.qa_list.length > 0) ?
+      payload.qa_list :
       Object.entries(answers).map(([qid, ansText]) => ({
         question_id: qid,
         question: STANDARD_QUESTIONS[qid] || qid,
