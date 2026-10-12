@@ -157,11 +157,25 @@ def postprocess_level1(bill_data: Dict[str, Any], raw_filename: str = "") -> Tup
                 processed_taxes.append(TaxItem(type=ttype, amount=amt))  # type: ignore
 
     # 6. Reconciliation checks (produce warnings only; never overwrite printed values)
+    #
+    # NOTE on subsidies:
+    #  - total_charges on the bill is the GROSS electricity subtotal (before subsidy)
+    #  - subsidy items are stored as negative amounts and offset the payable current_bill
+    #  - We must exclude subsidy amounts from the charges-sum check and from the
+    #    current-bill check so that subsidised bills don't generate false-positive notices.
+
+    subsidy_sum = sum(
+        c.amount for c in processed_charges if c.type == "subsidy"
+    )  # will be <= 0
+
     if total_charges is not None and processed_charges:
-        sum_charges = sum(c.amount for c in processed_charges)
-        if abs(sum_charges - total_charges) > 2.0:
+        # Compare only non-subsidy charges against the printed total_charges
+        non_subsidy_sum = sum(
+            c.amount for c in processed_charges if c.type != "subsidy"
+        )
+        if abs(non_subsidy_sum - total_charges) > 2.0:
             warnings.append(
-                f"Charges reconciliation notice: sum of charges ({sum_charges:.2f}) differs from total_charges ({total_charges:.2f})."
+                f"Charges reconciliation notice: sum of non-subsidy charges ({non_subsidy_sum:.2f}) differs from total_charges ({total_charges:.2f})."
             )
 
     if total_taxes is not None and processed_taxes:
@@ -176,10 +190,11 @@ def postprocess_level1(bill_data: Dict[str, Any], raw_filename: str = "") -> Tup
         and total_charges is not None
         and total_taxes is not None
     ):
-        expected_curr = total_charges + total_taxes
+        # current_bill = total_charges + subsidy (negative) + total_taxes
+        expected_curr = total_charges + subsidy_sum + total_taxes
         if abs(expected_curr - current_bill) > 2.0:
             warnings.append(
-                f"Current bill reconciliation notice: total_charges + total_taxes ({expected_curr:.2f}) differs from printed current_bill ({current_bill:.2f})."
+                f"Current bill reconciliation notice: total_charges + subsidy + total_taxes ({expected_curr:.2f}) differs from printed current_bill ({current_bill:.2f})."
             )
 
     # Construct validated model
