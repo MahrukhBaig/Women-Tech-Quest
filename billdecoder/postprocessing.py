@@ -168,8 +168,9 @@ def postprocess_level1(bill_data: Dict[str, Any], raw_filename: str = "") -> Tup
         c.amount for c in processed_charges if c.type == "subsidy"
     )  # will be <= 0
 
-    if total_charges is not None and processed_charges:
-        # Compare only non-subsidy charges against the printed total_charges
+    has_itemized_energy = any(c.type == "energy" for c in processed_charges)
+    if total_charges is not None and processed_charges and (has_itemized_energy or provider == "KE"):
+        # Compare only non-subsidy charges against the printed total_charges when charges are fully itemized
         non_subsidy_sum = sum(
             c.amount for c in processed_charges if c.type != "subsidy"
         )
