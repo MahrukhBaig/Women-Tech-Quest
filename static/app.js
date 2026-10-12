@@ -406,21 +406,32 @@ document.addEventListener("DOMContentLoaded", () => {
     // Hero amounts (handle negative credits and nulls)
     const payVal = document.getElementById("hero-payable-val");
     const payCurrency = document.getElementById("hero-payable-currency");
+    const payNote = document.getElementById("hero-payable-note");
     if (l1.payable_within_due_date != null) {
       const pVal = Number(l1.payable_within_due_date);
       if (pVal < 0) {
         payCurrency.style.display = "none";
         payVal.className = "amount-huge amount-credit-neutral";
         payVal.textContent = "Credit: PKR " + Math.abs(pVal).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " (nothing to pay)";
+        if (payNote) payNote.style.display = "none";
       } else {
         payCurrency.style.display = "inline";
         payVal.className = "amount-huge";
         payVal.textContent = pVal.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        if (payNote) {
+          if (pVal === 0 && l1.current_bill && Number(l1.current_bill) > 0) {
+            payNote.style.display = "block";
+            payNote.textContent = "Current bill: PKR " + Number(l1.current_bill).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " (covered by solar/credit balance)";
+          } else {
+            payNote.style.display = "none";
+          }
+        }
       }
     } else {
       payCurrency.style.display = "none";
       payVal.className = "amount-huge";
       payVal.textContent = "Not on bill";
+      if (payNote) payNote.style.display = "none";
     }
 
     const lateVal = document.getElementById("hero-late-val");
