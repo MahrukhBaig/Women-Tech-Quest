@@ -1,0 +1,11 @@
+[project]
+name = "wtq-bill-decoder"
+version = "1.0.0"
+description = "WTQ Utility Bill Decoder"
+requires-python = ">=3.11"
+
+[tool.vercel]
+entrypoint = "api:app"
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
