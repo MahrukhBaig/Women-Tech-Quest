@@ -1,11 +1,18 @@
 """FastAPI Backend Application wrapping the billdecoder core library."""
 
+import sys
+from pathlib import Path
+
+# Ensure application root directory is at the front of sys.path for serverless runtimes (e.g. Vercel)
+_ROOT = Path(__file__).resolve().parent
+if str(_ROOT) not in sys.path:
+    sys.path.insert(0, str(_ROOT))
+
 import json
 import logging
 import os
 import tempfile
 import uuid
-from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile, status
