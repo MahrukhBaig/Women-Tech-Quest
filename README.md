@@ -65,35 +65,35 @@ The application is deployed on **Vercel** with continuous deployment from GitHub
 ```mermaid
 flowchart TD
     subgraph INGESTION["1. Ingestion & Security Guardrails"]
-        A[Bill Image File / Upload] --> B[Magic Bytes & Size Validation\nPNG/JPG <= 15MB]
-        B --> C[EXIF Rotation & Contrast Normalization\nMax 2048px Long Edge]
+        A["Bill Image File / Upload"] --> B["Magic Bytes & Size Validation (PNG/JPG <= 15MB)"]
+        B --> C["EXIF Rotation & Contrast Normalization (Max 2048px)"]
     end
 
     subgraph LEVEL1["2. Level 1: Schema Extraction"]
-        C --> D[Gemini 3.5 Flash-Lite\nStructured JSON Schema]
-        D --> E[Post-Processing & Validation Engine]
-        E -->|Rule A: Multi-Register| E1[Resolve Peak/Off-Peak Units]
-        E -->|Rule E: Totals Guard| E2[Identify Non-KE Unitemized Subtotals]
-        E -->|PII Sanitizer| E3[Strict CNIC & Phone Redaction]
+        C --> D["Gemini 3.5 Flash-Lite (Structured JSON Schema)"]
+        D --> E["Post-Processing & Validation Engine"]
+        E -->|Rule A: Multi-Register| E1["Resolve Peak/Off-Peak Units"]
+        E -->|Rule E: Totals Guard| E2["Identify Non-KE Unitemized Subtotals"]
+        E -->|PII Sanitizer| E3["Strict CNIC & Phone Redaction"]
     end
 
     subgraph STATS["3. Deterministic Python Calculator"]
-        C --> F[History Table Extractor\n12-13 Months Usage]
-        E --> G[compute_bill_stats()]
+        C --> F["History Table Extractor (12-13 Months Usage)"]
+        E --> G["Python Calculator: compute_bill_stats"]
         F --> G
-        G -->|Precomputed| H[• Tax Share %\n• Average Monthly Units\n• Months Above 200 Count\n• Largest Charge Item\n• Late Payment Penalty]
+        G -->|Precomputed Stats| H["Tax %, Monthly Avg, Peak Units, Late Penalty"]
     end
 
     subgraph LEVEL2["4. Level 2: Grounded Reasoning"]
-        H --> I[Grounded Prompt Builder\nUntrusted Data Isolation]
-        I --> J[Gemini 3.5 Flash-Lite Q&A\nZero In-Model Math]
-        J --> K[Level 2 Natural Language Answers]
+        H --> I["Grounded Prompt Builder (Untrusted Data Isolation)"]
+        I --> J["Gemini 3.5 Flash-Lite Q&A (Zero Arithmetic in LLM)"]
+        J --> K["Level 2 Natural Language Answers"]
     end
 
     subgraph OUTPUTS["5. Deliverables & Delivery"]
-        E --> L[output/level1.csv]
-        K --> M[output/level2.csv]
-        E --> N[FastAPI Web App & UI]
+        E --> L["output/level1.csv"]
+        K --> M["output/level2.csv"]
+        E --> N["FastAPI Web App & UI"]
         K --> N
     end
 
