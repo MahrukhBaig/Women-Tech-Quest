@@ -33,8 +33,9 @@ class Settings:
         # Concurrency limit (default 1 to be conservative with free tier)
         self.max_concurrency: int = int(os.getenv("MAX_CONCURRENCY", "1"))
         
-        # Disk cache settings
-        cache_dir_env = os.getenv("CACHE_DIR", ".cache/billdecoder")
+        # Disk cache settings (use /tmp on serverless environments where working dir is read-only)
+        default_cache = "/tmp/.cache/billdecoder" if (os.getenv("VERCEL") or os.getenv("AWS_LAMBDA_FUNCTION_NAME")) else ".cache/billdecoder"
+        cache_dir_env = os.getenv("CACHE_DIR", default_cache)
         self.cache_dir: Path = Path(cache_dir_env)
         self.cache_enabled: bool = os.getenv("DISABLE_CACHE", "0") != "1"
         

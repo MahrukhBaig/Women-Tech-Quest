@@ -89,7 +89,16 @@ class GeminiClient:
         self.cache_dir = settings.cache_dir
         self.cache_enabled = settings.cache_enabled
         if self.cache_enabled:
-            self.cache_dir.mkdir(parents=True, exist_ok=True)
+            try:
+                self.cache_dir.mkdir(parents=True, exist_ok=True)
+            except OSError as ose:
+                logger.warning("Could not create cache dir %s (%s). Falling back to tempdir.", self.cache_dir, ose)
+                import tempfile
+                self.cache_dir = Path(tempfile.gettempdir()) / "billdecoder_cache"
+                try:
+                    self.cache_dir.mkdir(parents=True, exist_ok=True)
+                except OSError:
+                    self.cache_enabled = False
         self.usage = TokenUsageTracker()
 
     def _compute_cache_key(
