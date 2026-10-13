@@ -249,19 +249,28 @@ async def decode_bill_endpoint(
 
 
 # Mount sample bills directory for easy UI testing
-train_bills_dir = Path(__file__).parent / "train" / "bills"
+train_bills_dir = Path(__file__).resolve().parent / "train" / "bills"
 if train_bills_dir.is_dir():
-    app.mount("/sample-bills", StaticFiles(directory=str(train_bills_dir)), name="samples")
+    app.mount("/sample-bills", StaticFiles(directory=str(train_bills_dir), check_dir=False), name="samples")
 
 # Mount static directory for frontend
-static_dir = Path(__file__).parent / "static"
-if static_dir.is_dir():
-    app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
+static_dir = Path(__file__).resolve().parent / "static"
+if not static_dir.is_dir() and Path("static").is_dir():
+    static_dir = Path("static").resolve()
 
-    @app.get("/")
-    async def serve_index():
-        index_file = static_dir / "index.html"
-        if index_file.is_file():
-            return FileResponse(index_file)
-        return {"message": "WTQ Utility Bill Decoder API"}
+if static_dir.is_dir():
+    app.mount("/static", StaticFiles(directory=str(static_dir), check_dir=False), name="static")
+
+
+@app.get("/")
+async def serve_index():
+    for candidate in [
+        static_dir / "index.html",
+        Path(__file__).resolve().parent / "static" / "index.html",
+        Path("static/index.html").resolve(),
+    ]:
+        if candidate.is_file():
+            return FileResponse(candidate)
+    return {"message": "WTQ Utility Bill Decoder API"}
+
 
