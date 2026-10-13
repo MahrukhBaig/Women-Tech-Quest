@@ -155,20 +155,6 @@ API_KEY=your_gemini_api_key_here
 
 ---
 
-## 📦 Packaging & Submission Verification
-
-Generate the verified, scanned submission package within the 15 MB limit:
-
-```bash
-python package_submission.py
-```
-
-This verification script:
-1. Validates the existence and formatting of `output/level1.csv` and `output/level2.csv`.
-2. Performs automated secret scanning against live API keys and credential regex patterns.
-3. Packages source code, configuration, tests, and outputs into `wtq-submission.zip`.
-4. Enforces the strict $\le 15$ MB package constraint.
-
 ---
 
 ## 📜 AI Usage & Participant Guide Compliance
