@@ -60,49 +60,34 @@ The application is deployed on **Vercel** with continuous deployment from GitHub
 
 ---
 
-## 🏗️ System Architecture
+## 🏗️ System Architecture & Workflow
 
-```mermaid
-flowchart TD
-    subgraph INGESTION["1. Ingestion & Security Guardrails"]
-        A["Bill Image File / Upload"] --> B["Magic Bytes & Size Validation (PNG/JPG <= 15MB)"]
-        B --> C["EXIF Rotation & Contrast Normalization (Max 2048px)"]
-    end
+The solution operates through an end-to-end, 5-stage pipeline that strictly decouples visual data extraction from numerical reasoning to guarantee zero-hallucination accuracy:
 
-    subgraph LEVEL1["2. Level 1: Schema Extraction"]
-        C --> D["Gemini 3.5 Flash-Lite (Structured JSON Schema)"]
-        D --> E["Post-Processing & Validation Engine"]
-        E -->|Rule A: Multi-Register| E1["Resolve Peak/Off-Peak Units"]
-        E -->|Rule E: Totals Guard| E2["Identify Non-KE Unitemized Subtotals"]
-        E -->|PII Sanitizer| E3["Strict CNIC & Phone Redaction"]
-    end
+### 1. Ingestion & Security Guardrails
+- **Payload & Format Verification**: Enforces a strict $\le 15$ MB cap and inspects magic bytes directly (only `.png` and `.jpeg` accepted).
+- **Computer Vision Pre-processing**: Auto-rotates orientation using EXIF orientation tags, normalizes color profiles to RGB, and caps dimensions at 2048 px on the longest edge without cropping.
+- **Untrusted Content Isolation**: All bill text is isolated as untrusted data within strict system prompts to prevent prompt injection attempts.
 
-    subgraph STATS["3. Deterministic Python Calculator"]
-        C --> F["History Table Extractor (12-13 Months Usage)"]
-        E --> G["Python Calculator: compute_bill_stats"]
-        F --> G
-        G -->|Precomputed Stats| H["Tax %, Monthly Avg, Peak Units, Late Penalty"]
-    end
+### 2. Level 1: Schema-Validated Extraction
+- **Multimodal Intelligence**: Uses `gemini-3.5-flash-lite` to extract non-identifying billing attributes conforming strictly to the competition Pydantic schema.
+- **Post-Processing Normalization**: Cleans dates (`YYYY-MM-DD`, `YYYY-MM`), enforces negative signs on subsidy credits, and resolves multi-register net-metered arrays (Rule A).
+- **PII Scrubbing**: Regex patterns sanitize and redact any inadvertent CNIC numbers or customer contact details.
 
-    subgraph LEVEL2["4. Level 2: Grounded Reasoning"]
-        H --> I["Grounded Prompt Builder (Untrusted Data Isolation)"]
-        I --> J["Gemini 3.5 Flash-Lite Q&A (Zero Arithmetic in LLM)"]
-        J --> K["Level 2 Natural Language Answers"]
-    end
+### 3. Historical Consumption Extraction
+- **12–13 Month Usage Tracking**: Extracts historical consumption from bar charts (KE) and historical tables (LESCO/IESCO) covering units consumed, bill amounts, and payments.
 
-    subgraph OUTPUTS["5. Deliverables & Delivery"]
-        E --> L["output/level1.csv"]
-        K --> M["output/level2.csv"]
-        E --> N["FastAPI Web App & UI"]
-        K --> N
-    end
+### 4. Deterministic Python Calculator
+- **Zero-Hallucination Arithmetic**: The LLM is strictly prohibited from computing numbers. A pure Python calculation engine precomputes:
+  - Exact tax share percentage and breakdown.
+  - 12-month average monthly consumption and variance against current bill.
+  - Exact count and names of months exceeding the 200-unit threshold.
+  - Largest itemized charge and Fuel Price Adjustment (FPA) totals.
+  - Late payment surcharge difference.
 
-    style INGESTION fill:#f8fafc,stroke:#94a3b8
-    style LEVEL1 fill:#eff6ff,stroke:#3b82f6
-    style STATS fill:#f0fdf4,stroke:#22c55e
-    style LEVEL2 fill:#faf5ff,stroke:#a855f7
-    style OUTPUTS fill:#fffbeb,stroke:#f59e0b
-```
+### 5. Level 2: Grounded Reasoning & Delivery
+- **Grounded Q&A**: Answers customer queries using plain English, injecting precalculated facts and citing exact printed PKR values.
+- **Delivery Outputs**: Writes standardized `output/level1.csv` and `output/level2.csv`, and streams live results to the interactive web application.
 
 ---
 
@@ -154,57 +139,6 @@ Add your Google Gemini API key to `.env`:
 MODEL_PROVIDER=google
 MODEL_NAME=gemini-3.5-flash-lite
 API_KEY=your_gemini_api_key_here
-```
-
----
-
-## 💻 Running the Application
-
-### Option A: Interactive Web UI (FastAPI)
-```bash
-python -m uvicorn api:app --host 127.0.0.1 --port 8000 --reload
-```
-Open **[http://127.0.0.1:8000](http://127.0.0.1:8000)** to launch the visual decoder.
-
-### Option B: Batch CLI Pipeline (Competition Evaluation)
-To run the automated batch pipeline over a directory of bill images:
-```bash
-python -m billdecoder.cli \
-  --bills-dir path/to/bills \
-  --level1-template path/to/level1_template.csv \
-  --level2-template path/to/level2_template.csv \
-  --output-dir output
-```
-
-**Parameters:**
-- `--bills-dir`: Folder containing `.png` / `.jpg` bills.
-- `--level1-template`: Path to competition `level1.csv` template.
-- `--level2-template`: Path to competition `level2.csv` template.
-- `--output-dir`: Output directory for generated CSVs (default: `./output`).
-- `--no-cache`: Optional flag to bypass disk caching.
-
----
-
-## 🧪 Test Suite
-
-Run the full automated test suite containing 19 test cases covering API contracts, deterministic calculations, normalization rules, security filters, and golden ground-truth bills:
-
-```bash
-python -m pytest tests/ -v
-```
-
-```text
-tests/test_api.py ................. Passed [21%]
-tests/test_calculator.py .......... Passed [26%]
-tests/test_csv.py ................. Passed [31%]
-tests/test_current_bill_regression.py  Passed [42%]
-tests/test_golden_kesc0008.py ..... Passed [47%]
-tests/test_mock_pipeline.py ....... Passed [52%]
-tests/test_normalisation.py ....... Passed [84%]
-tests/test_schema.py .............. Passed [94%]
-tests/test_security.py ............ Passed [100%]
-
-======================== 19 passed in 2.01s ========================
 ```
 
 ---
